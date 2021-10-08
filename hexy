@@ -1,0 +1,324 @@
+import sys
+
+print(sys.version)
+
+import pygame
+import os
+import math
+import random
+from sys import winver
+from pygame import gfxdraw
+from enum import IntEnum
+from enum import Enum
+
+import helper
+from helper import board
+
+# board = [   [1,1,1,1],
+#            [2,2,2,2,2],
+#           [3,3,3,3,3,3],
+#          [4,4,4,4,4,4,4],
+#           [5,5,5,5,5,5],
+#            [6,6,6,6,6],
+#             [7,7,7,7]
+#         ]
+
+# print(math.pi)
+
+# Game Call Phaze - overlapping patterns (rotate, etc)
+
+pygame.font.init()
+pygame.mixer.init()
+
+from pygame.constants import KEYUP
+
+pygame.init()
+
+WIDTH, HEIGHT = 1000, 1000
+
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+
+WHITE = (255,255,255,128)
+BACKGROUND = (32,32,32)
+
+LEFT = 1
+CENTRE = 2
+RIGHT = 3
+SCROLL_UP = 4
+SCROLL_DOWN = 5
+
+X = 0
+Y = 1
+
+class VASARELY_COLORS(Enum):
+
+  PINK     = (181, 42,142)
+  PURPLE   = ( 90, 24,120)
+  
+  BLUE     = ( 39,105,176)
+  CYAN     = ( 79,168,219)
+  NAVY     = ( 42, 40,143)
+
+  DORANGE  = (227,102, 79)
+  LORANGE  = (250,147, 95)
+  
+  LYELLOW  = (244,255,173)
+  DYELLOW  = (247,194,119)
+  
+  LGREEN   = (  0,173,147)
+  DGREEN   = (  0,110,110)
+
+  RED      = (222, 33, 49)
+  MAROON   = (135, 26, 35)
+  PEACH    = (247,194, 11) 
+
+  BLACK    = (  0,  0,  0)
+  GRAY     = (122,135,191)
+
+class COLORS(IntEnum):
+
+  PINK    = 0
+  PURPLE  = 1
+  CYAN    = 2
+  NAVY    = 3
+  BLUE    = 4
+  DORANGE = 5
+  LORANGE = 6
+  LYELLOW = 7
+  DYELLOW = 8
+  LGREEN  = 9
+  DGREEN  = 10
+  PEACH   = 11
+  RED     = 12
+  MAROON  = 13
+  BLACK   = 14
+  GRAY    = 15
+
+BULLET_HIT_SOUND  = pygame.mixer.Sound(os.path.join('C:/Users/ssbbc/Desktop/Brad/python/assets', 'Grenade.mp3'))
+BULLET_FIRE_SOUND = pygame.mixer.Sound(os.path.join('C:/Users/ssbbc/Desktop/Brad/python/assets', 'Silencer.mp3'))
+
+HEALTH_FONT = pygame.font.SysFont('comicsans', 40)
+WINNER_FONT = pygame.font.SysFont('comicsans', 100)
+
+FPS = 60            # frames per second
+
+size = 25           # size of each cell
+grid = []           # list holding the cell objects
+currentCell = (0,0) # which hexagonal cell has the focus
+layers = 4          # of hexagonal layers - defaults to 4
+
+pygame.display.set_caption("Habitat for Humanity Game")
+# pygame.key.set_repeat(0,500)
+# print(pygame.key.get_repeat())
+
+WINNER_FONT = pygame.font.SysFont('comicsans', 12)
+
+def get_Color():
+
+  clr = int(random.random()*16)
+
+  ret = VASARELY_COLORS.PINK.value
+
+  if   clr == COLORS.PINK:    ret = VASARELY_COLORS.PINK.value
+  elif clr == COLORS.PURPLE:  ret = VASARELY_COLORS.PURPLE.value
+  elif clr == COLORS.CYAN:    ret = VASARELY_COLORS.CYAN.value
+  elif clr == COLORS.NAVY:    ret = VASARELY_COLORS.NAVY.value
+  elif clr == COLORS.BLUE:    ret = VASARELY_COLORS.BLUE.value
+  elif clr == COLORS.DORANGE: ret = VASARELY_COLORS.DORANGE.value
+  elif clr == COLORS.LORANGE: ret = VASARELY_COLORS.LORANGE.value
+  elif clr == COLORS.LYELLOW: ret = VASARELY_COLORS.LYELLOW.value
+  elif clr == COLORS.DYELLOW: ret = VASARELY_COLORS.DYELLOW.value
+  elif clr == COLORS.LGREEN:  ret = VASARELY_COLORS.LGREEN.value
+  elif clr == COLORS.DGREEN:  ret = VASARELY_COLORS.DGREEN.value
+  elif clr == COLORS.PEACH:   ret = VASARELY_COLORS.PEACH.value
+  elif clr == COLORS.RED:     ret = VASARELY_COLORS.RED.value
+  elif clr == COLORS.MAROON:  ret = VASARELY_COLORS.MAROON.value
+  elif clr == COLORS.BLACK:   ret = VASARELY_COLORS.BLACK.value
+  elif clr == COLORS.GRAY:    ret = VASARELY_COLORS.GRAY.value
+  else:                       ret = VASARELY_COLORS.GRAY.value
+
+  return ret
+  #   clr = int(random.random()*16)
+
+  #   match clr:
+      
+  #     case COLORS.PINK:    return PINK
+  #     case COLORS.PURPLE:  return PURPLE
+  #     case COLORS.CYAN:    return CYAN
+  #     case COLORS.NAVY:    return NAVY
+  #     case COLORS.BLUE:    return BLUE
+  #     case COLORS.DORANGE: return DORANGE
+  #     case COLORS.LORANGE: return LORANGE
+  #     case COLORS.LYELLOW: return LYELLOW
+  #     case COLORS.DYELLOW: return DYELLOW
+  #     case COLORS.LGREEN:  return LGREEN
+  #     case COLORS.DGREEN:  return DGREEN
+  #     case COLORS.PEACH:   return PEACH
+  #     case COLORS.RED:     return RED
+  #     case COLORS.MAROON:  return MAROON
+  #     case COLORS.BLACK:   return BLACK
+  #     case COLORS.GRAY:    return GRAY
+  #     case _:              return -16
+
+def initialize_Game():
+  
+  return
+
+class point:
+
+  def __init__(self, x, y) -> None:
+    
+    self.x = x
+    self.y = y
+
+class hex:
+
+  x = 0
+  y = 0
+
+  def __init__(self, x, y, size, color):
+  
+    self.x    = int(x + size/2) # horizontal position of centre
+    self.y    = int(y + size/2) # vertical position of centre
+    self.size = size            # distance from center to corner point
+
+    self.orientation = 0
+    self.color = color
+    self.points = []
+    self.hit = False
+
+    p6 = math.pi/6
+
+    offsetX = math.cos(p6)*size
+    offsetY = math.sin(p6)*size
+
+    # self.points.append(point(self.x, self.y)) # Center
+    
+    self.points.append((self.x,           self.y + size))
+    self.points.append((self.x + offsetX, self.y + offsetY))
+    self.points.append((self.x + offsetX, self.y - offsetY))
+    self.points.append((self.x,           self.y - size))
+    self.points.append((self.x - offsetX, self.y - offsetY))
+    self.points.append((self.x - offsetX, self.y + offsetY))
+  
+  def draw(self):
+
+    w = WIN
+    c = self.color
+
+    pygame.gfxdraw.filled_polygon(w, self.points, self.color)
+
+    if self.hit:
+      
+      pygame.gfxdraw.circle(WIN, self.x, self.y, size, VASARELY_COLORS.RED.value)
+
+      # draw_text = WINNER_FONT.render('3', 1, WHITE)
+
+      WIN.blit(WINNER_FONT.render('0', 1, WHITE), (self.points[0][0], self.points[0][1]))
+      WIN.blit(WINNER_FONT.render('1', 1, WHITE), (self.points[1][0], self.points[1][1]))
+      WIN.blit(WINNER_FONT.render('2', 1, WHITE), (self.points[2][0], self.points[2][1]))
+      WIN.blit(WINNER_FONT.render('3', 1, WHITE), (self.points[3][0], self.points[3][1]))
+      WIN.blit(WINNER_FONT.render('4', 1, WHITE), (self.points[4][0], self.points[4][1]))
+      WIN.blit(WINNER_FONT.render('5', 1, WHITE), (self.points[5][0], self.points[5][1]))
+
+  def move(self):
+
+    x = pygame.mouse.get_pos()[X]
+    y = pygame.mouse.get_pos()[Y]
+
+    if(math.dist((self.x, self.y), (x, y))<size): self.hit = True
+    else:                                         self.hit = False
+
+def load_board():
+
+  temp = []
+
+  for row in range(len(board)):
+    
+    print(helper.board[row])
+
+    for col in range(len(board[row])):
+
+      rowPos = 250 + row*size*1.5 + size*math.sin(math.pi/6)
+      colPos = 250 + col*size*math.cos(math.pi/6)*2
+
+      if row%2==0: colPos += size*math.cos(math.pi/6)
+
+      temp.append(hex(colPos, rowPos, size, get_Color()))
+
+  grid.append(temp)
+
+  temp.clear
+
+load_board()
+
+def draw_background():
+    
+  for row in range(len(grid)):
+    for col in range(len(grid[row])):
+      grid[row][col].draw()
+
+def handle_keys(key):
+
+  if   key == pygame.K_q: print("Up Left")                                    
+  elif key == pygame.K_w: print("Up")
+  elif key == pygame.K_e: print("Up Right")
+  elif key == pygame.K_a: print("Down Left")
+  elif key == pygame.K_s: print("Down")
+  elif key == pygame.K_d: print("Down Right")
+
+def handle_mouse(button):
+
+  print(pygame.mouse.get_pos())
+
+  if   button == LEFT:        print("Left")
+  elif button == CENTRE:      print("Wheel")
+  elif button == RIGHT:       print("Right")
+  elif button == SCROLL_UP:   print("Scroll Up")
+  elif button == SCROLL_DOWN: print("Scroll Down")
+
+def handle_move():
+
+    for row in range(len(grid)):
+      for col in range(len(grid[row])):
+        grid[row][col].move()  
+
+def draw_window():
+
+  WIN.fill(BACKGROUND)
+
+  draw_background()
+
+  pygame.draw.rect(WIN, (128,0,0), (0,0,WIDTH,HEIGHT),2,15)
+
+  pygame.display.update()
+
+def main():
+
+  clock = pygame.time.Clock()
+
+  run = True
+
+  while run:
+
+    clock.tick(FPS)
+
+    for event in pygame.event.get():
+      
+      if event.type == pygame.QUIT:
+        run = False
+        pygame.quit()
+      
+      if event.type == pygame.KEYUP:         handle_keys(event.key)
+      if event.type == pygame.MOUSEBUTTONUP: handle_mouse(event.button)
+
+      handle_move()
+
+    draw_window()  
+    
+
+if __name__ == "__main__":
+  main()
+
+
+
