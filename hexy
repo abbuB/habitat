@@ -49,6 +49,10 @@ SCROLL_DOWN = 5
 X = 0
 Y = 1
 
+# Orientation
+VERTICAL = 0
+HORIZONTAL = 1
+
 class VASARELY_COLORS(Enum):
 
   PINK     = (181, 42,142)
@@ -71,7 +75,7 @@ class VASARELY_COLORS(Enum):
   MAROON   = (135, 26, 35)
   PEACH    = (247,194, 11) 
 
-  BLACK    = (  0,  0,  0)
+  BLACK    = ( 64,64,64)
   GRAY     = (122,135,191)
 
 class COLORS(IntEnum):
@@ -163,9 +167,10 @@ class App:
     self.size = size
 
     self.grid = []           # list holding the cell objects
-    self.current_cell = (0,0) # which hexagonal cell has the focus
+    self.current_cell = None # which hexagonal cell has the focus
     self.grid_size = 7       # of hexagonal layers - defaults to 4
     self.fps = 60
+    self.orientation = VERTICAL
 
 class point:
 
@@ -176,13 +181,17 @@ class point:
 
 class hex:
 
-  x = 0
-  y = 0
+  id = 0
 
-  def __init__(self, x, y, diameter, color):
-  
-    self.x = x               # horizontal position of centre
-    self.y = y               # vertical position of centre
+  def __init__(self, x, y, diameter, color, orientation):
+
+    self.id = hex.id    # identificaion Number
+    # print(self.id)
+
+    hex.id+=1
+
+    self.x = int(x)               # horizontal position of centre
+    self.y = int(y)               # vertical position of centre
     
     self.diameter = diameter # full diameter width of hexagon
     self.radius = diameter/2 # distance from center to corner point
@@ -192,32 +201,50 @@ class hex:
     self.center = point(self.x, self.y) # Center Point
     self.points = []
 
-    self.orientation = 0
+    self.orientation = orientation
     
     self.color = color
-    self.centerColor = color
+    self.center_color = color
 
     self.hit = False
     
-    # Calculate Corner Points
-
-    # Offsets
-    oX = math.cos(math.pi/6)*self.radius # Offset x
-    oY = math.sin(math.pi/6)*self.radius # Offset Y
-
     # Aliases
     sX = self.x
     sY = self.y
     r = self.radius
     pts = self.points
 
-    pts.append((sX,      sY + r ))
-    pts.append((sX + oX, sY + oY))
-    pts.append((sX + oX, sY - oY))
-    pts.append((sX,      sY - r ))
-    pts.append((sX - oX, sY - oY))
-    pts.append((sX - oX, sY + oY))
-  
+    if self.orientation == HORIZONTAL:
+
+      # Calculate Corner Points
+
+      # Offsets
+      oX = math.cos(math.pi/6)*self.radius # Offset x
+      oY = math.sin(math.pi/6)*self.radius # Offset Y
+
+      pts.append((sX,      sY + r ))
+      pts.append((sX + oX, sY + oY))
+      pts.append((sX + oX, sY - oY))
+      pts.append((sX,      sY - r ))
+      pts.append((sX - oX, sY - oY))
+      pts.append((sX - oX, sY + oY))
+
+    else:
+
+      oX = math.cos(math.pi/3)*self.radius # Offset x
+      oY = math.sin(math.pi/3)*self.radius # Offset Y
+
+      pts.append((sX + r,  sY))
+      pts.append((sX + oX, sY - oY ))
+      pts.append((sX - oX, sY - oY))
+      pts.append((sX - r,  sY))
+      pts.append((sX - oX, sY + oY))
+      pts.append((sX + oX, sY + oY))
+
+  def reset(self):
+
+    id = 0
+
   def draw(self):
 
     def draw_text():
@@ -235,14 +262,22 @@ class hex:
     c = self.color
 
     pygame.gfxdraw.filled_polygon(w, self.points, self.color)
-    # pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.size*0.65), self.centerColor)
-    # pygame.gfxdraw.circle(WIN, self.x, self.y, int(app.size*0.65), (128,128,128))
+    
+    # pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.size*0.35), self.center_color)
+    # pygame.gfxdraw.circle(WIN, self.x, self.y, int(app.size*0.35), (128,128,128))
+
+    text = HEALTH_FONT.render(str(self.id),True,WHITE)
+    text_rect = text.get_rect(center=(self.x, self.y))
+    # WIN.blit(text,text_rect)
 
     if self.hit:
       
-      pygame.gfxdraw.circle(WIN, int(self.x), int(self.y), int(self.diameter/2), VASARELY_COLORS.RED.value)
+      app.current_cell = self
 
-      draw_text()
+      pygame.gfxdraw.filled_polygon(w, self.points, (0,0,0,64))
+      # pygame.gfxdraw.aapolygon(w, self.points, VASARELY_COLORS.RED.value)
+
+      # draw_text()
 
       # draw_text = WINNER_FONT.render('3', 1, WHITE)
 
@@ -253,10 +288,6 @@ class hex:
       # WIN.blit(WINNER_FONT.render('4', 1, WHITE), (self.points[4][0], self.points[4][1]))
       # WIN.blit(WINNER_FONT.render('5', 1, WHITE), (self.points[5][0], self.points[5][1]))
 
-  def move(self):
-
-    self.hitTest()
-
   def hitTest(self):
 
     x = pygame.mouse.get_pos()[X]
@@ -265,56 +296,159 @@ class hex:
     if(math.dist((self.x, self.y), (x, y))<=self.radius): self.hit = True
     else:                                                 self.hit = False
 
+  def move(self):
+
+    self.hitTest()
+
+  def click(self):
+
+    if self.hit:
+      app.current_cell = self
+      print(app.current_cell.id)
+
+app = App(WIDTH/(7+1))
+app.size = WIDTH/(app.grid_size+1)
+
 def load_grid():
 
-  app.grid.clear
+  if app.orientation == HORIZONTAL: load_grid_horizontal()
+  elif app.orientation == VERTICAL: load_grid_vertical()
 
-  temp = []
+def load_grid_horizontal():
 
-  colPos = 0
-  rowPos = 0
+  hex.id = 0
 
-  # size = (WIDTH - 100)/(gridSize*2)/math.cos(math.pi/6)
-  
-  #  Determine Center
-  # print(WIDTH/2, HEIGHT/2)
-
-  # Determine size of hex cells
-  # size = (WIDTH - 100)/gridSize
-
-  # Add Row
-
-  # Load Center row  
-  # for row in range(gridSize):
-    # temp.append(hex(colPos, rowPos, size, get_Color()))
-
-    # for col in range(len(board[row])):
-      # print(1) 
-
-def load_board():
-
+  # Add center row
   sz = app.size*1/math.cos(math.pi/6)
   
   app.grid.clear
 
   temp = []
 
-  # for row in range(len(board)):
+  for cell in range(app.grid_size):
+
+    colPos = app.size + cell*sz*math.cos(math.pi/6)
+
+    temp.append(hex(colPos, HEIGHT/2, sz, get_Color(), HORIZONTAL))
     
-  #   print(helper.board[row])
-
-  for col in range(app.grid_size):
-    
-    rowPos = HEIGHT/2
-    colPos = app.size + col*sz*math.cos(math.pi/6)
-
-    # if row%2==0: colPos += sz*math.cos(math.pi/6)
-
-    temp.append(hex(colPos, rowPos, sz, get_Color()))
-
   app.grid.append(temp)
 
-  temp.clear
+  # Add Rows above and below
+  row_offset = sz - sz*math.sin(math.pi/6)/2
+  
+  above = []
+  below = []
+
+  col_limit = int(app.grid_size-1)
+  row_limit = math.ceil(app.grid_size/2-1)
+
+  coef = sz*math.cos(math.pi/6)
+
+  for row in range(row_limit):
+
+    for col in range(col_limit):
+
+      # Add to Start
+      rowPos = HEIGHT/2 - row_offset * (row+1)
+      colPos = app.size + col*coef + row*coef/2 + coef/2
+
+      above.append(hex(colPos, rowPos, sz, get_Color(), HORIZONTAL))
+      # above.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
+
+      # Add to end
+      rowPos = HEIGHT/2 + row_offset * (row+1)
+      colPos = app.size + col*coef + row*coef/2 + coef/2
+
+      below.append(hex(colPos, rowPos, sz, get_Color(), HORIZONTAL))
+      # below.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
+
+    app.grid.insert(0,above)
+    app.grid.append(below)
+    
+    col_limit-=1
+
+    above = []
+    below = []
+
+  # print(hex.counter)
+
+def load_grid_vertical():
+
+  hex.id = 0
+
+  # Add center row
+  sz = app.size*1/math.cos(math.pi/6)
+  
+  app.grid.clear
+
+  temp = []
+
+  # Add Center Column
+  for cell in range(app.grid_size):
+
+    colPos = app.size + cell*sz*math.cos(math.pi/6)
+
+    temp.append(hex(WIDTH/2, colPos, sz, get_Color(), VERTICAL))
+    
+  app.grid.append(temp)
+
+  # Add Rows above and below
+  col_offset = sz - sz*math.sin(math.pi/6)/2
+  
+  above = []
+  below = []
+
+  col_limit = int(app.grid_size-1)
+  row_limit = math.ceil(app.grid_size/2-1)
+
+  coef = sz*math.cos(math.pi/6)
+
+  for row in range(row_limit):
+
+    for col in range(col_limit):
+
+      # Add to Start
+      colPos = WIDTH/2 - col_offset * (row+1)
+      rowPos = app.size + col*coef + row*coef/2 + coef/2
+
+      above.append(hex(colPos, rowPos, sz, get_Color(), VERTICAL))
+
+      # Add to end
+      colPos = WIDTH/2 + col_offset * (row+1)
+      rowPos = app.size + col*coef + row*coef/2 + coef/2
+
+      below.append(hex(colPos, rowPos, sz, get_Color(), VERTICAL))
+
+    app.grid.insert(0,above)
+    app.grid.append(below)
+    
+    col_limit-=1
+
+    above = []
+    below = []
+
+def get_cell(cell):
+
+  for row in range(len(app.grid)):
+    for col in range(len(app.grid[row])):
+      return app.grid[row][col].center_color
+
+def swap_grid():
+
+  for row in range(len(app.grid)):
+    for col in range(len(app.grid[row])):
+      get_cell(app.grid[row][col])
+
+  return
+
+def cell_count():
+
+  return
+  count=0
+
+  for row in range(len(app.grid)):
+    
+    print(len(app.grid[row]))
 
 def draw_board():
     
@@ -330,49 +464,81 @@ def draw_window():
 
   w = WIDTH/(app.grid_size+1)
 
-  pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
+  # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
+
+  if app.current_cell is not None:
+    WIN.blit(WINNER_FONT.render(str(app.current_cell.id), 1, WHITE), (20, 20))
 
   pygame.display.update()
 
-app = App(WIDTH/(7+1))
-app.size = WIDTH/(app.grid_size+1)
-
 # Event handlers ==================================================================================
 
-def handle_keys(key):
+def handle_keys(event):
 
-  if   key == pygame.K_q: print("Up Left")                                    
-  elif key == pygame.K_w: print("Up")
-  elif key == pygame.K_e: print("Up Right")
-  elif key == pygame.K_a: print("Down Left")
-  elif key == pygame.K_s: print("Down")
-  elif key == pygame.K_d: print("Down Right")
+  key = event.key
 
+  if event.mod & pygame.KMOD_CTRL:
+
+    if key == pygame.K_SPACE: toggle_orientation()
+
+  else:
+
+    if   key == pygame.K_q:     print('Up Left')
+    elif key == pygame.K_w:     print("Up")
+    elif key == pygame.K_e:     print("Up Right")
+    elif key == pygame.K_a:     print("Down Left")
+    elif key == pygame.K_s:     print("Down")
+    elif key == pygame.K_d:     print("Down Right")
+
+def toggle_orientation():
+
+  if app.orientation == HORIZONTAL:
+    
+    app.orientation = VERTICAL
+    app.grid.clear()
+
+    load_grid_vertical()
+
+  else:                 
+    
+    app.orientation = HORIZONTAL
+    app.grid.clear()
+
+    load_grid_horizontal()
+    
 def increment_grid():
 
   app.grid_size += 2
   app.size = math.floor(WIDTH/(app.grid_size+1))
   app.grid.clear()
 
-  load_board()
+  load_grid()
 
 def decrement_grid():
 
-  app.grid_size -= 2  
-  app.size = math.floor(WIDTH/(app.grid_size+1))
-  app.grid.clear()
+  if app.grid_size>2:
 
-  load_board()
+    app.grid_size -= 2  
+    app.size = math.floor(WIDTH/(app.grid_size+1))
+    app.grid.clear()
 
-def handle_mouse(button):
+    load_grid()
 
-  print(pygame.mouse.get_pos())
+def handle_click(button):
 
-  if   button == LEFT:        increment_grid()
-  elif button == CENTRE:      print("Wheel")
-  elif button == RIGHT:       decrement_grid()
-  elif button == SCROLL_UP:   print("Scroll Up")
-  elif button == SCROLL_DOWN: print("Scroll Down")
+  for row in range(len(app.grid)):
+    for col in range(len(app.grid[row])):
+      app.grid[row][col].click()  
+
+  # return
+
+  # print(pygame.mouse.get_pos())
+
+  # if   button == LEFT:        print('left')       
+  # elif button == CENTRE:      print('Wheel')
+  # elif button == RIGHT:       print('rightt')
+  # elif button == SCROLL_UP:   increment_grid()
+  # elif button == SCROLL_DOWN: decrement_grid()
 
 def handle_move():
 
@@ -382,10 +548,11 @@ def handle_move():
 
 # Main Loop =======================================================================================
 
-print(app.size)
+# print(app.size)
 
-load_board()
 load_grid()
+
+swap_grid()
 
 def main():
 
@@ -403,14 +570,13 @@ def main():
         run = False
         pygame.quit()
       
-      if event.type == pygame.KEYUP:         handle_keys(event.key)
-      if event.type == pygame.MOUSEBUTTONUP: handle_mouse(event.button)
-
+      if event.type == pygame.KEYUP:         handle_keys(event)
+      if event.type == pygame.MOUSEBUTTONUP: handle_click(event.button)
+      
       handle_move()
-
+  
     draw_window()  
     
-
 if __name__ == "__main__":
   main()
 
