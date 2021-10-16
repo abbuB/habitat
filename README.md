@@ -1,2 +1,2 @@
 # habitat
-Games, etc for Habitata
+Games, etc for Habitat
