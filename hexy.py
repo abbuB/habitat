@@ -310,9 +310,9 @@ class hex:
     pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)    
     pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.size*0.25), self.center_color)
 
-    text = HEALTH_FONT.render(str(self.id),True,WHITE)
-    text_rect = text.get_rect(center=(self.x, self.y))
-    WIN.blit(text,text_rect)
+    # text = HEALTH_FONT.render(str(self.id),True,WHITE)
+    # text_rect = text.get_rect(center=(self.x, self.y))
+    # WIN.blit(text,text_rect)
 
     if self.hit:
       
@@ -321,6 +321,10 @@ class hex:
       pygame.draw.polygon(WIN, WHITE, self.border, width=5)
       # pygame.gfxdraw.aapolygon(w, self.points, VASARELY_COLORS.RED.value)
 
+      text = HEALTH_FONT.render(str(self.col) + ', ' + str(self.row),True,WHITE)
+      text_rect = text.get_rect(center=(self.x, self.y))
+      WIN.blit(text,text_rect)
+      
       # draw_text()
 
       # draw_text = WINNER_FONT.render('3', 1, WHITE)
@@ -350,8 +354,12 @@ class hex:
 
     if self.hit:
       app.current_cell = self
-      p(str(self.x) + ',' + str(self.y))
-      p(app.current_cell.id)
+      p(str(self.col) + ',' + str(self.row))
+      # p(app.current_cell.id)
+
+      # for col in range(len(app.grid[app.current_cell.col])):
+
+      #   p(app.grid[col][0])
 
 #endregion - Objects ----------------------------------------------------------
 
@@ -454,9 +462,9 @@ def load_grid_vertical():
 
   for cell in range(app.grid_size):
 
-    colPos = app.size + cell*sz*math.cos(math.pi/6)
-
-    h=hex(HEIGHT/2, colPos, sz, get_Color(), app.orientation)
+    rowPos = app.size + cell*sz*math.cos(math.pi/6)
+ 
+    h = hex(HEIGHT/2, rowPos, sz, get_Color(), app.orientation)
 
     temp.append(h)
     app.swap.append(h)
@@ -504,6 +512,12 @@ def load_grid_vertical():
 
     above = []
     below = []
+
+  for col in range(len(app.grid)):
+    for row in range(len(app.grid[col])):
+
+      app.grid[col][row].col = col
+      app.grid[col][row].row = row
 
   # p(app.swap)
 
@@ -631,6 +645,7 @@ def connect_grid():
 
 def swap_grid():
 
+  return
   def get_cell():
     
     return app.swap[int(random.random()*len(app.swap))]
@@ -675,13 +690,14 @@ def up():
 
   g = app.grid
   cell = app.current_cell
-  length = len(app.grid)
-  temp_color = app.grid[0][cell.col].center_color
-  p(cell.col)
+  length = len(app.grid[app.current_cell.col])
+  
+  temp_color = app.grid[cell.col][0].center_color
+  
   for row in range(length):
     
-    if row==length-1: g[row][cell.col].center_color = temp_color
-    else:             g[row][cell.col].center_color = g[row+1][cell.col].center_color
+    if row == length-1: g[cell.col][row].center_color = temp_color
+    else:               g[cell.col][row].center_color = g[cell.col][row+1].center_color
   
   # except:
 
@@ -692,18 +708,19 @@ def down():
   try:
 
     g = app.grid
-    c = app.current_cell
-    length = len(app.grid)
-    temp_color = app.grid[length-1][c.col].center_color
+    cell = app.current_cell
+    length = len(app.grid[app.current_cell.col])
+    
+    temp_color = app.grid[cell.col][length-1].center_color
     
     for row in reversed(range(length)):
       
-      if row==0: g[row][c.col].center_color = temp_color
-      else:      g[row][c.col].center_color = g[row-1][c.col].center_color
+      if row == 0: g[cell.col][row].center_color = temp_color
+      else:        g[cell.col][row].center_color = g[cell.col][row-1].center_color
 
   except:
 
-    p('up() Error' + Exception.__name__)
+    p('down() Error' + Exception.__name__)
 
 def up_left():    return
 def up_right():   return
@@ -815,7 +832,7 @@ def handle_move():
 #endregion - Events -----------------------------------------------------------
 
 reset_grid()
-app.current_cell = app.grid[math.ceil(app.grid_size/2)][math.ceil(app.grid_size/2)]
+app.current_cell = app.grid[0][0]
 
 #region - Main Loop ===========================================================
 
