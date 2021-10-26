@@ -31,6 +31,12 @@ pygame.font.init()
 pygame.mixer.init()
 pygame.init()
 
+import ctypes  # An included library with Python install.
+
+def Mbox(title, text, style):
+  
+  return ctypes.windll.user32.MessageBoxW(0, text, title, style)
+
 #endregion - Initialization ------------------------------------------------------
 
 #region - Constants ===========================================================
@@ -432,40 +438,80 @@ def load_grid_horizontal():
 
 def load_grid_vertical():
 
-  try:
+  # try:
 
-    limit = app.grid_size
-    sz = app.size*1/math.cos(math.pi/6)
+  p('VERTICAL')
 
-    cof3 = math.sin(math.pi/3)
-    cof6 = math.sin(math.pi/6)
+  hex.id = 0
 
-    for row in range(limit):
+  # Add center col
+  sz = app.size*1/math.cos(math.pi/6)
+  
+  app.grid.clear
+  app.swap.clear
 
-      temp = []
+  temp = []
 
-      for col in range(limit):
-        
-        h = hex(sz + col*sz*cof3, sz + row*sz*cof3, sz, get_Color(), app.orientation)
-        
-        h.row = row
-        h.col = col
+  for cell in range(app.grid_size):
 
-        temp.append(h)
+    colPos = app.size + cell*sz*math.cos(math.pi/6)
 
-      app.grid.append(temp)
+    h=hex(HEIGHT/2, colPos, sz, get_Color(), app.orientation)
 
-    count=0
+    temp.append(h)
+    app.swap.append(h)
 
-    for row in range(len(app.grid)):
-      for col in range(len(app.grid[row])):
-        count+=1
+  app.grid.append(temp)
 
-    p('Count: ' + str(count))
+  # Add Rows above and below
+  col_offset = sz - sz*math.sin(math.pi/6)/2
+  
+  above = []
+  below = []
 
-  except:
+  row_limit = int(app.grid_size-1)
+  col_limit = math.ceil(app.grid_size/2-1)
 
-    p('Load Grid Horizontal Error' + Exception.__name__)
+  coef = sz*math.cos(math.pi/6)
+
+  for col in range(col_limit):
+    for row in range(row_limit):
+
+      # Add to Start
+      colPos = HEIGHT/2 - col_offset * (col+1)
+      rowPos = app.size + row*coef + col*coef/2 + coef/2
+
+      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
+
+      above.append(h)
+      app.swap.append(h)
+      # above.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
+
+      # Add to end
+      colPos = HEIGHT/2 + col_offset * (col+1)
+      rowPos = app.size + row*coef + col*coef/2 + coef/2
+
+      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
+
+      below.append(h)
+      app.swap.append(h)
+      # below.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
+
+    app.grid.insert(0,above)
+    app.grid.append(below)
+    
+    row_limit-=1
+
+    above = []
+    below = []
+
+  # p(app.swap)
+
+  # p(hex.counter)
+
+  # except:
+
+  #   p('Load Grid Horizontal Error' + Exception.__name__)
 
 def _load_grid_vertical():
 
@@ -547,6 +593,22 @@ def _load_grid_vertical():
 
 #region - Commands ============================================================
 
+def get_count() -> int:
+
+  try:
+
+    count=0 
+
+    for row in range(len(app.grid)):
+      for col in range(len(app.grid[row])):
+        count+=1
+
+    return count
+  
+  except:
+
+    Mbox('Exception - Hexy.py', 'up() - ' + Exception.__name__, 1)
+
 def connect_grid():
 
   def load_up_down():
@@ -565,7 +627,7 @@ def connect_grid():
 
       p('ERROR LOADING UP / DOWN ' + str(row) + ', ' + str(col))
 
-  load_up_down()
+  # load_up_down()
 
 def swap_grid():
 
@@ -602,34 +664,46 @@ def draw_window():
 
   # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
 
-  if app.current_cell.top is not None:
-    WIN.blit(WINNER_FONT.render(str(app.current_cell.top.id), 1, WHITE), (20, 20))
+  if app.current_cell is not None:
+    WIN.blit(WINNER_FONT.render(str(app.current_cell.id), 1, WHITE), (20, 20))
 
   pygame.display.update()
 
 def up():
 
+  # try:
+
   g = app.grid
-  c = app.current_cell
+  cell = app.current_cell
   length = len(app.grid)
-  temp_color = app.grid[0][c.col].center_color
-  
+  temp_color = app.grid[0][cell.col].center_color
+  p(cell.col)
   for row in range(length):
     
-    if row==length-1: g[row][c.col].center_color = temp_color
-    else:             g[row][c.col].center_color = g[row+1][c.col].center_color
+    if row==length-1: g[row][cell.col].center_color = temp_color
+    else:             g[row][cell.col].center_color = g[row+1][cell.col].center_color
+  
+  # except:
+
+  #   Mbox('Exception - Hexy.py', 'up() - ' + Exception.__name__, 1)
 
 def down():
   
-  g = app.grid
-  c = app.current_cell
-  length = len(app.grid)
-  temp_color = app.grid[length-1][c.col].center_color
-  
-  for row in reversed(range(length)):
+  try:
+
+    g = app.grid
+    c = app.current_cell
+    length = len(app.grid)
+    temp_color = app.grid[length-1][c.col].center_color
     
-    if row==0: g[row][c.col].center_color = temp_color
-    else:      g[row][c.col].center_color = g[row-1][c.col].center_color
+    for row in reversed(range(length)):
+      
+      if row==0: g[row][c.col].center_color = temp_color
+      else:      g[row][c.col].center_color = g[row-1][c.col].center_color
+
+  except:
+
+    p('up() Error' + Exception.__name__)
 
 def up_left():    return
 def up_right():   return
@@ -701,12 +775,12 @@ def handle_keys(event):
 
   else:
 
-    if   key == pygame.K_w:   up()
-    elif key == pygame.K_s:   down()
-    elif key == pygame.K_q:   up_left()
-    elif key == pygame.K_e:   up_right()
-    elif key == pygame.K_a:   down_left()    
-    elif key == pygame.K_d:   down_right()
+    if   key == pygame.K_w:     up()
+    elif key == pygame.K_s:     down()
+    elif key == pygame.K_q:     up_left()
+    elif key == pygame.K_e:     up_right()
+    elif key == pygame.K_a:     down_left()    
+    elif key == pygame.K_d:     down_right()
 
 def handle_click(event):
 
@@ -741,7 +815,7 @@ def handle_move():
 #endregion - Events -----------------------------------------------------------
 
 reset_grid()
-app.current_cell = app.grid[0][0]
+app.current_cell = app.grid[math.ceil(app.grid_size/2)][math.ceil(app.grid_size/2)]
 
 #region - Main Loop ===========================================================
 
