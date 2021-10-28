@@ -51,7 +51,7 @@ pygame.display.set_caption("Habitat for Humanity Game")
 
 # Color Constants
 WHITE = (255,255,255,128)
-BACKGROUND = (32,32,32)
+BACKGROUND = (8,8,8)
 
 # Mouse Button Constants
 LEFT        = 1
@@ -70,47 +70,51 @@ HORIZONTAL = 1
 
 class VASARELY_COLORS(Enum):
 
-  PINK     = (181, 42,142)
-  PURPLE   = ( 90, 24,120)
-  
-  BLUE     = ( 39,105,176)
-  CYAN     = ( 79,168,219)
-  NAVY     = ( 42, 40,143)
+  PINK        = (181, 42,142)
+  PURPLE      = ( 90, 24,120)
 
-  DORANGE  = (227,102, 79)
-  LORANGE  = (250,147, 95)
-  
-  LYELLOW  = (244,255,173)
-  DYELLOW  = (247,194,119)
-  
-  LGREEN   = (  0,173,147)
-  DGREEN   = (  0,110,110)
+  BLUE        = ( 39,105,176)
+  CYAN        = ( 79,168,219)
+  NAVY        = ( 42, 40,143)
 
-  RED      = (222, 33, 49)
-  MAROON   = (135, 26, 35)
-  PEACH    = (247,194, 11) 
+  DORANGE     = (227,102, 79)
+  LORANGE     = (250,147, 95)
 
-  BLACK    = ( 64,64,64)
-  GRAY     = (122,135,191)
+  LYELLOW     = (244,255,173)
+  DYELLOW     = (247,194,119)
+
+  LGREEN      = (  0,173,147)
+  DGREEN      = (  0,110,110)
+
+  RED         = (222, 33, 49)
+  MAROON      = (135, 26, 35)
+  PEACH       = (247,194, 11) 
+
+  BLACK       = (32,32,32)
+  GRAY        = (122,135,191)
+  
+  TRANSPARENT = (255,0,0,0)
+
 
 class COLORS(IntEnum):
 
-  PINK    = 0
-  PURPLE  = 1
-  CYAN    = 2
-  NAVY    = 3
-  BLUE    = 4
-  DORANGE = 5
-  LORANGE = 6
-  LYELLOW = 7
-  DYELLOW = 8
-  LGREEN  = 9
-  DGREEN  = 10
-  PEACH   = 11
-  RED     = 12
-  MAROON  = 13
-  BLACK   = 14
-  GRAY    = 15
+  PINK        = 0
+  PURPLE      = 1
+  CYAN        = 2
+  NAVY        = 3
+  BLUE        = 4
+  DORANGE     = 5
+  LORANGE     = 6
+  LYELLOW     = 7
+  DYELLOW     = 8
+  LGREEN      = 9
+  DGREEN      = 10
+  PEACH       = 11
+  RED         = 12
+  MAROON      = 13
+  BLACK       = 14
+  GRAY        = 15
+  TRANSPARENT = 16
 
 BULLET_HIT_SOUND  = pygame.mixer.Sound(os.path.join('C:/Users/ssbbc/Desktop/Brad/python/assets', 'Grenade.mp3'))
 BULLET_FIRE_SOUND = pygame.mixer.Sound(os.path.join('C:/Users/ssbbc/Desktop/Brad/python/assets', 'Silencer.mp3'))
@@ -128,23 +132,24 @@ def get_Color():
 
   ret = VASARELY_COLORS.PINK.value
 
-  if   clr == COLORS.PINK:    ret = VASARELY_COLORS.PINK.value
-  elif clr == COLORS.PURPLE:  ret = VASARELY_COLORS.PURPLE.value
-  elif clr == COLORS.CYAN:    ret = VASARELY_COLORS.CYAN.value
-  elif clr == COLORS.NAVY:    ret = VASARELY_COLORS.NAVY.value
-  elif clr == COLORS.BLUE:    ret = VASARELY_COLORS.BLUE.value
-  elif clr == COLORS.DORANGE: ret = VASARELY_COLORS.DORANGE.value
-  elif clr == COLORS.LORANGE: ret = VASARELY_COLORS.LORANGE.value
-  elif clr == COLORS.LYELLOW: ret = VASARELY_COLORS.LYELLOW.value
-  elif clr == COLORS.DYELLOW: ret = VASARELY_COLORS.DYELLOW.value
-  elif clr == COLORS.LGREEN:  ret = VASARELY_COLORS.LGREEN.value
-  elif clr == COLORS.DGREEN:  ret = VASARELY_COLORS.DGREEN.value
-  elif clr == COLORS.PEACH:   ret = VASARELY_COLORS.PEACH.value
-  elif clr == COLORS.RED:     ret = VASARELY_COLORS.RED.value
-  elif clr == COLORS.MAROON:  ret = VASARELY_COLORS.MAROON.value
-  elif clr == COLORS.BLACK:   ret = VASARELY_COLORS.BLACK.value
-  elif clr == COLORS.GRAY:    ret = VASARELY_COLORS.GRAY.value
-  else:                       ret = VASARELY_COLORS.GRAY.value
+  if   clr == COLORS.PINK:        ret = VASARELY_COLORS.PINK.value
+  elif clr == COLORS.PURPLE:      ret = VASARELY_COLORS.PURPLE.value
+  elif clr == COLORS.CYAN:        ret = VASARELY_COLORS.CYAN.value
+  elif clr == COLORS.NAVY:        ret = VASARELY_COLORS.NAVY.value
+  elif clr == COLORS.BLUE:        ret = VASARELY_COLORS.BLUE.value
+  elif clr == COLORS.DORANGE:     ret = VASARELY_COLORS.DORANGE.value
+  elif clr == COLORS.LORANGE:     ret = VASARELY_COLORS.LORANGE.value
+  elif clr == COLORS.LYELLOW:     ret = VASARELY_COLORS.LYELLOW.value
+  elif clr == COLORS.DYELLOW:     ret = VASARELY_COLORS.DYELLOW.value
+  elif clr == COLORS.LGREEN:      ret = VASARELY_COLORS.LGREEN.value
+  elif clr == COLORS.DGREEN:      ret = VASARELY_COLORS.DGREEN.value
+  elif clr == COLORS.PEACH:       ret = VASARELY_COLORS.PEACH.value
+  elif clr == COLORS.RED:         ret = VASARELY_COLORS.RED.value
+  elif clr == COLORS.MAROON:      ret = VASARELY_COLORS.MAROON.value
+  elif clr == COLORS.BLACK:       ret = VASARELY_COLORS.BLACK.value
+  elif clr == COLORS.GRAY:        ret = VASARELY_COLORS.GRAY.value
+  elif clr == COLORS.TRANSPARENT: ret = VASARELY_COLORS.TRANSPARENT.value
+  else:                           ret = VASARELY_COLORS.GRAY.value
 
   return ret
   #   clr = int(random.random()*16)
@@ -173,16 +178,17 @@ def get_Color():
 
 class App:
 
-  def __init__(self, size) -> None:
+  def __init__(self, cell_size, grid_size) -> None:
       
-    self.size = size
+    self.cell_size = cell_size
 
-    self.grid = []            # list holding the cell objects
-    self.swap = []            # list of references to cell objects
-    self.current_cell = None  # which hexagonal cell has the focus
-    self.grid_size = 7        # of hexagonal layers - defaults to 7
-    self.fps = 60
+    self.grid = []                # list holding the cell objects
+    self.swap = []                # list of references to cell objects
+    self.current_cell = None      # which hexagonal cell has the focus
+    self.grid_size = grid_size    # of hexagonal layers - defaults to 7
+    self.fps = 60                 # Frames Per Second
     self.orientation = VERTICAL
+    self.moves = 0
 
 class point:
 
@@ -308,7 +314,7 @@ class hex:
       WIN.blit(WINNER_FONT.render('5', 1, WHITE), (pts[5][0], pts[5][1]))
 
     pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)    
-    pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.size*0.25), self.center_color)
+    pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.cell_size*0.25), self.center_color)
 
     # text = HEALTH_FONT.render(str(self.id),True,WHITE)
     # text_rect = text.get_rect(center=(self.x, self.y))
@@ -350,21 +356,21 @@ class hex:
 
     self.hitTest()
 
-  def click(self):
+  def click(self) -> None:
 
     if self.hit:
       app.current_cell = self
-      p(str(self.col) + ',' + str(self.row))
-      # p(app.current_cell.id)
+      p(self.id)
+      if self.center_color == self.color:
 
-      # for col in range(len(app.grid[app.current_cell.col])):
-
-      #   p(app.grid[col][0])
+        self.color        = VASARELY_COLORS.TRANSPARENT.value
+        self.center_color = VASARELY_COLORS.TRANSPARENT.value
 
 #endregion - Objects ----------------------------------------------------------
 
-app = App(HEIGHT/(7+1))
-app.size = HEIGHT/(app.grid_size+1)
+m = 7
+app = App(HEIGHT/(m+1), m)
+app.cell_size = HEIGHT/(app.grid_size+1)
 
 #region - Load Grid ===========================================================
 
@@ -380,7 +386,7 @@ def load_grid_horizontal():
   hex.id = 0
 
   # Add center row
-  sz = app.size*1/math.cos(math.pi/6)
+  sz = app.cell_size*1/math.cos(math.pi/6)
   
   app.grid.clear
   app.swap.clear
@@ -389,7 +395,7 @@ def load_grid_horizontal():
 
   for cell in range(app.grid_size):
 
-    colPos = app.size + cell*sz*math.cos(math.pi/6)
+    colPos = app.cell_size + cell*sz*math.cos(math.pi/6)
 
     h=hex(colPos, HEIGHT/2, sz, get_Color(), app.orientation)
 
@@ -414,23 +420,21 @@ def load_grid_horizontal():
 
       # Add to Start
       rowPos = HEIGHT/2 - row_offset * (row+1)
-      colPos = app.size + col*coef + row*coef/2 + coef/2
+      colPos = app.cell_size + col*coef + row*coef/2 + coef/2
 
       h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
 
       above.append(h)
       app.swap.append(h)
-      # above.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
 
       # Add to end
       rowPos = HEIGHT/2 + row_offset * (row+1)
-      colPos = app.size + col*coef + row*coef/2 + coef/2
+      colPos = app.cell_size + col*coef + row*coef/2 + coef/2
 
       h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
 
       below.append(h)
       app.swap.append(h)
-      # below.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
 
     app.grid.insert(0,above)
     app.grid.append(below)
@@ -440,6 +444,12 @@ def load_grid_horizontal():
     above = []
     below = []
 
+  for col in range(len(app.grid)):
+    for row in range(len(app.grid[col])):
+
+      app.grid[col][row].col = col
+      app.grid[col][row].row = row
+      
   # p(app.swap)
 
   # p(hex.counter)
@@ -453,7 +463,7 @@ def load_grid_vertical():
   hex.id = 0
 
   # Add center col
-  sz = app.size*1/math.cos(math.pi/6)
+  sz = app.cell_size*1/math.cos(math.pi/6)
   
   app.grid.clear
   app.swap.clear
@@ -462,8 +472,9 @@ def load_grid_vertical():
 
   for cell in range(app.grid_size):
 
-    rowPos = app.size + cell*sz*math.cos(math.pi/6)
- 
+    rowPos = (cell+1)*sz*math.cos(math.pi/6)
+    # rowPos = app.cell_size + cell*sz*math.cos(math.pi/6)
+
     h = hex(HEIGHT/2, rowPos, sz, get_Color(), app.orientation)
 
     temp.append(h)
@@ -471,7 +482,7 @@ def load_grid_vertical():
 
   app.grid.append(temp)
 
-  # Add Rows above and below
+  # Add Columns left and right
   col_offset = sz - sz*math.sin(math.pi/6)/2
   
   above = []
@@ -487,23 +498,21 @@ def load_grid_vertical():
 
       # Add to Start
       colPos = HEIGHT/2 - col_offset * (col+1)
-      rowPos = app.size + row*coef + col*coef/2 + coef/2
+      rowPos = (row + 1)*coef + col*coef/2 + coef/2
 
       h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
 
       above.append(h)
       app.swap.append(h)
-      # above.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
 
       # Add to end
       colPos = HEIGHT/2 + col_offset * (col+1)
-      rowPos = app.size + row*coef + col*coef/2 + coef/2
+      rowPos = (row + 1)*coef + col*coef/2 + coef/2
 
       h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
 
       below.append(h)
       app.swap.append(h)
-      # below.append(hex(colPos, rowPos, sz, (hex.counter,hex.counter, hex.counter)))
 
     app.grid.insert(0,above)
     app.grid.append(below)
@@ -519,89 +528,9 @@ def load_grid_vertical():
       app.grid[col][row].col = col
       app.grid[col][row].row = row
 
-  # p(app.swap)
-
-  # p(hex.counter)
-
   # except:
 
   #   p('Load Grid Horizontal Error' + Exception.__name__)
-
-def _load_grid_vertical():
-
-  p('VERTICAL')
-  hex.id = 0
-
-  # Add center row
-  sz = app.size*1/math.cos(math.pi/6)
-  
-  app.grid.clear
-  app.swap.clear
-
-  temp = []
-  
-  # Add Center Column
-  for cell in range(app.grid_size):
-
-    colPos = app.size + cell*sz*math.cos(math.pi/6)
-
-    h = hex(WIDTH/2, colPos, sz, get_Color(), app.orientation)
-
-    # h.row = row
-    # h.col = col
-
-    temp.append(h)
-    app.swap.append(h)
-    
-  app.grid.append(temp)
-
-  # Add Rows above and below
-  col_offset = sz - sz*math.sin(math.pi/6)/2
-  
-  above = []
-  below = []
-
-  col_limit = int(app.grid_size-1)
-  row_limit = math.ceil(app.grid_size/2-1)
-
-  coef = sz*math.cos(math.pi/6)
-
-  for row in range(row_limit):
-    for col in range(col_limit):
-
-      # Add to Start
-      colPos = WIDTH/2 - col_offset * (row+1)
-      rowPos = app.size + col*coef + row*coef/2 + coef/2
-
-      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
-      
-      h.row = row
-      h.col = col
-
-      above.append(h)
-      app.swap.append(h)
-
-      # Add to end
-      colPos = WIDTH/2 + col_offset * (row+1)
-      rowPos = app.size + col*coef + row*coef/2 + coef/2
-
-      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
-
-      h.row = row
-      h.col = col
-
-      below.append(h)
-      app.swap.append(h)
-
-    app.grid.insert(0,above)
-    app.grid.append(below)
-    
-    col_limit-=1
-
-    above = []
-    below = []
-
-    # p(app.swap)
 
 #endregion - Load Grid --------------------------------------------------------
 
@@ -621,7 +550,7 @@ def get_count() -> int:
   
   except:
 
-    Mbox('Exception - Hexy.py', 'up() - ' + Exception.__name__, 1)
+    Mbox('Exception - Hexy.py', 'get_count() - ' + Exception.__name__, 1)
 
 def connect_grid():
 
@@ -645,7 +574,6 @@ def connect_grid():
 
 def swap_grid():
 
-  return
   def get_cell():
     
     return app.swap[int(random.random()*len(app.swap))]
@@ -671,41 +599,50 @@ def draw_board():
 
 def draw_window():
 
-  WIN.fill(BACKGROUND)
+  # try:
 
-  draw_board()
+    WIN.fill(BACKGROUND)
 
-  w = WIDTH/(app.grid_size+1)
+    draw_board()
 
-  # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
+    w = WIDTH/(app.grid_size+1)
 
-  if app.current_cell is not None:
-    WIN.blit(WINNER_FONT.render(str(app.current_cell.id), 1, WHITE), (20, 20))
+    # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
 
-  pygame.display.update()
+    if app.current_cell is not None:
+      WIN.blit(WINNER_FONT.render(str(app.current_cell.id), 1, WHITE), (20, 20))
+      WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
+
+    pygame.display.update()
+
+  # except:
+
+  #   Mbox('Exception - Hexy.py', 'draw_window() - ' + Exception.__name__, 1)
 
 def up():
 
   # try:
 
-  g = app.grid
-  cell = app.current_cell
-  length = len(app.grid[app.current_cell.col])
-  
-  temp_color = app.grid[cell.col][0].center_color
-  
-  for row in range(length):
+    g = app.grid
+    cell = app.current_cell
+    length = len(app.grid[app.current_cell.col])
     
-    if row == length-1: g[cell.col][row].center_color = temp_color
-    else:               g[cell.col][row].center_color = g[cell.col][row+1].center_color
-  
+    temp_color = app.grid[cell.col][0].center_color
+    
+    for row in range(length):
+      
+      if row == length-1: g[cell.col][row].center_color = temp_color
+      else:               g[cell.col][row].center_color = g[cell.col][row+1].center_color
+
+    app.moves+=1
+
   # except:
 
   #   Mbox('Exception - Hexy.py', 'up() - ' + Exception.__name__, 1)
 
 def down():
   
-  try:
+  # try:
 
     g = app.grid
     cell = app.current_cell
@@ -718,16 +655,18 @@ def down():
       if row == 0: g[cell.col][row].center_color = temp_color
       else:        g[cell.col][row].center_color = g[cell.col][row-1].center_color
 
-  except:
+    app.moves+=1
 
-    p('down() Error' + Exception.__name__)
+  # except:
 
-def up_left():    return
-def up_right():   return
-def down_left():  return
-def down_right(): return
-def right():      return
-def left():       return
+  #   p('down() Error' + Exception.__name__)
+
+def up_left():    app.moves+=1; return
+def up_right():   app.moves+=1; return
+def down_left():  app.moves+=1; return
+def down_right(): app.moves+=1; return
+def right():      app.moves+=1; return
+def left():       app.moves+=1; return
 
 def toggle_orientation():
 
@@ -753,6 +692,7 @@ def reset_grid():
 
   hex.id =  0
   
+  app.moves = -0
   app.grid.clear()
   app.swap.clear()
 
@@ -763,7 +703,7 @@ def reset_grid():
 def increment_grid():
 
   app.grid_size += 2
-  app.size = math.floor(WIDTH/(app.grid_size+1))
+  app.cell_size = math.floor(WIDTH/(app.grid_size+1))
 
   reset_grid()
 
@@ -772,9 +712,18 @@ def decrement_grid():
   if app.grid_size>3:
 
     app.grid_size -= 2  
-    app.size = math.floor(WIDTH/(app.grid_size+1))
+    app.cell_size = math.floor(WIDTH/(app.grid_size+1))
 
     reset_grid()
+
+def check_cells():
+
+    for col in range(len(app.grid)):
+      for row in range(len(app.grid[col])):
+
+        if app.grid[col][row].color ==  app.grid[col][row].center_color:
+          app.grid[col][row].color        = VASARELY_COLORS.TRANSPARENT.value
+          app.grid[col][row].center_color = VASARELY_COLORS.TRANSPARENT.value
 
 #endregion - Commands ---------------------------------------------------------
 
@@ -799,29 +748,21 @@ def handle_keys(event):
     elif key == pygame.K_a:     down_left()    
     elif key == pygame.K_d:     down_right()
 
+    check_cells()
+
 def handle_click(event):
 
-  # for row in range(len(app.grid)):
-  #   for col in range(len(app.grid[row])):
-  #     app.grid[row][col].click()  
-
-  # return
-
-  # p(pygame.mouse.get_pos())
-
-  if   event.button == LEFT:          
+  def left_click():
 
     for row in range(len(app.grid)):
       for col in range(len(app.grid[row])):
-        app.grid[row][col].click()  
+        app.grid[row][col].click()
 
+  if   event.button == LEFT:        left_click()  
   elif event.button == SCROLL_UP:   increment_grid()
   elif event.button == SCROLL_DOWN: decrement_grid()
-
-  # elif event.button == CENTRE:      p('Wheel')
-  elif event.button == RIGHT:
-    
-    reset_grid()
+  elif event.button == CENTRE:      p('Wheel')
+  elif event.button == RIGHT:       reset_grid()
 
 def handle_move():
 
