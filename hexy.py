@@ -203,19 +203,22 @@ class hex:
 
   def __init__(self, x, y, diameter, color, orientation) -> None:
 
-    self.id = hex.id                    # identification Number
+    self.id = hex.id                                # identification Number
 
-    hex.id+=1                           # Increment overall object count
+    hex.id+=1                                       # Increment overall object count
 
-    self.x = int(x)                     # horizontal position of centre
-    self.y = int(y)                     # vertical position of centre
+    self.x = int(x)                                 # horizontal position of centre
+    self.y = int(y)                                 # vertical position of centre
     
-    self.row = 0                        # row of cell in grid array
-    self.col = 0                        # col of cell in grid array
+    self.row = 0                                    # row of cell in grid array
+    self.col = 0                                    # col of cell in grid array
 
-    self.diameter = diameter            # full diameter width of hexagon
-    self.radius = diameter/2            # distance from center to corner point
-    
+    self.diameter = diameter                        # full diameter width of hexagon
+    self.radius = diameter/2                        # distance from center to corner point
+    self.inradius = self.radius*math.cos(math.pi/6) # distance from center to center of a side
+    self.maximal_diameter = self.radius * 2         # twice the radius         
+    self.minimal_diameter = self.inradius * 2       # twice the inradius
+
     self.center = point(x, y)           # Center Point
     self.points = []                    # list of 6 vertex points
     self.border = []                    # list of 6 vertex points of border
@@ -251,7 +254,8 @@ class hex:
     if self.orientation == HORIZONTAL:
 
       # Offsets
-      oX = math.cos(math.pi/6)*self.radius # Offset x
+      # oX = math.cos(math.pi/6)*self.radius # Offset x
+      oX = self.inradius # Offset x
       oY = math.sin(math.pi/6)*self.radius # Offset Y
 
       pts.append((sX,      sY + r ))
@@ -360,7 +364,7 @@ class hex:
 
     if self.hit:
       app.current_cell = self
-      p(self.id)
+      # p(self.id)
       if self.center_color == self.color:
 
         self.color        = VASARELY_COLORS.TRANSPARENT.value
@@ -454,7 +458,7 @@ def load_grid_horizontal():
 
   # p(hex.counter)
 
-def load_grid_vertical():
+def _load_grid_vertical():
 
   # try:
 
@@ -527,6 +531,48 @@ def load_grid_vertical():
 
       app.grid[col][row].col = col
       app.grid[col][row].row = row
+
+  # except:
+
+  #   p('Load Grid Horizontal Error' + Exception.__name__)
+
+def load_grid_vertical():
+
+  # try:
+
+  p('VERTICAL')
+
+  hex.id = 0
+
+  radius = app.cell_size*1/math.cos(math.pi/6)
+  
+  app.grid.clear
+  app.swap.clear
+
+  temp = []
+
+  limit = app.grid_size
+
+  inradius = radius*math.cos(math.pi/6)
+
+  for row in range(limit):
+    for col in range(limit):
+
+      # Add to Start1
+      colPos = 2.5 * radius/2 + (0.75 * radius) * col
+
+      if   col%2 == 0:  rowPos = inradius * 0.75 + row * inradius + inradius/2
+      elif col%2 == 1:  rowPos = inradius * 0.75 + row * inradius
+
+      h = hex(colPos, rowPos, radius, get_Color(), app.orientation)
+
+      # app.grid[col][row].col = col
+      # app.grid[col][row].row = row
+
+      temp.append(h)
+      app.swap.append(h)
+
+    app.grid.append(temp)
 
   # except:
 
@@ -634,7 +680,7 @@ def up():
       if row == length-1: g[cell.col][row].center_color = temp_color
       else:               g[cell.col][row].center_color = g[cell.col][row+1].center_color
 
-    app.moves+=1
+    increment_moves()
 
   # except:
 
@@ -655,18 +701,20 @@ def down():
       if row == 0: g[cell.col][row].center_color = temp_color
       else:        g[cell.col][row].center_color = g[cell.col][row-1].center_color
 
-    app.moves+=1
+    increment_moves()
 
   # except:
 
   #   p('down() Error' + Exception.__name__)
 
-def up_left():    app.moves+=1; return
-def up_right():   app.moves+=1; return
-def down_left():  app.moves+=1; return
-def down_right(): app.moves+=1; return
-def right():      app.moves+=1; return
-def left():       app.moves+=1; return
+def increment_moves(): app.moves+=1
+
+def up_left():    increment_moves()
+def up_right():   increment_moves()
+def down_left():  increment_moves()
+def down_right(): increment_moves()
+def right():      increment_moves()
+def left():       increment_moves()
 
 def toggle_orientation():
 
@@ -709,7 +757,7 @@ def increment_grid():
 
 def decrement_grid(): 
 
-  if app.grid_size>3:
+  if app.grid_size>4:
 
     app.grid_size -= 2  
     app.cell_size = math.floor(WIDTH/(app.grid_size+1))
@@ -755,12 +803,15 @@ def handle_click(event):
   def left_click():
 
     for row in range(len(app.grid)):
-      for col in range(len(app.grid[row])):
+      for col in range(len(app.grid[row])):        
         app.grid[row][col].click()
 
-  if   event.button == LEFT:        left_click()  
-  elif event.button == SCROLL_UP:   increment_grid()
-  elif event.button == SCROLL_DOWN: decrement_grid()
+    for row in range(len(app.grid)):
+      p(app.grid[row][app.current_cell.col].col)
+
+  if   event.button == LEFT:        left_click()
+  elif event.button == SCROLL_UP:   up();         check_cells()   #increment_grid()
+  elif event.button == SCROLL_DOWN: down();       check_cells()   #decrement_grid()
   elif event.button == CENTRE:      p('Wheel')
   elif event.button == RIGHT:       reset_grid()
 
