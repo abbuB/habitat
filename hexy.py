@@ -24,6 +24,7 @@ import helper
 
 from enum import IntEnum
 from enum import Enum
+from array import *
 
 from helper import board
 
@@ -51,6 +52,7 @@ pygame.display.set_caption("Habitat for Humanity Game")
 
 # Color Constants
 WHITE = (255,255,255,128)
+RED = (255,0,0,128)
 BACKGROUND = (8,8,8)
 
 # Mouse Button Constants
@@ -181,11 +183,13 @@ class App:
   def __init__(self, cell_size, grid_size) -> None:
       
     self.cell_size = cell_size
+    self.grid_size = grid_size    # of hexagonal layers - defaults to 7
 
     self.grid = []                # list holding the cell objects
     self.swap = []                # list of references to cell objects
+
     self.current_cell = None      # which hexagonal cell has the focus
-    self.grid_size = grid_size    # of hexagonal layers - defaults to 7
+    
     self.fps = 60                 # Frames Per Second
     self.orientation = VERTICAL
     self.moves = 0
@@ -200,8 +204,9 @@ class point:
 class hex:
 
   id = 0
+  orientation = VERTICAL
 
-  def __init__(self, x, y, diameter, color, orientation) -> None:
+  def __init__(self, x, y, diameter, color) -> None:
 
     self.id = hex.id                                # identification Number
 
@@ -219,29 +224,28 @@ class hex:
     self.maximal_diameter = self.radius * 2         # twice the radius         
     self.minimal_diameter = self.inradius * 2       # twice the inradius
 
-    self.center = point(x, y)           # Center Point
-    self.points = []                    # list of 6 vertex points
-    self.border = []                    # list of 6 vertex points of border
+    self.center = point(x, y)                       # Center Point
+    self.points = []                                # list of 6 vertex points
+    self.border = []                                # list of 6 vertex points of border
 
-    self.orientation = orientation      # HORIZONTAL or VERTICAL rows
-    
-    self.color = color                  # Background Color
-    self.center_color = color           # Interior Color
+    self.color = color                              # Background Color
+    self.center_color = color                       # Interior Color
 
-    self.hit = False                    # Mouse is currently over the cellw
-    
+    self.hit = False                                # Mouse is currently over the cellw
+    self.active = True                              # Cell has not been solved
+
     # References to adjacent cells - Cells wrap
-    self.top = None                     # Reference to the cell above
-    self.bottom = None                  # Reference to the cell below
+    self.top = None                                 # Reference to the cell above
+    self.bottom = None                              # Reference to the cell below
 
-    self.upper_right = None             # Reference to the cell above right
-    self.upper_left = None              # Reference to the cell above left
-    
-    self.lower_right = None             # Reference to the cell below right
-    self.lower_left = None              # Reference to the cell below left
+    self.upper_right = None                         # Reference to the cell above right
+    self.upper_left = None                          # Reference to the cell above left
 
-    self.left = None                    # Reference to the cell left
-    self.right = None                   # Reference to the cell right
+    self.lower_right = None                         # Reference to the cell below right
+    self.lower_left = None                          # Reference to the cell below left
+
+    self.left = None                                # Reference to the cell left
+    self.right = None                               # Reference to the cell right
 
     # Aliases
     sX = self.x
@@ -254,7 +258,6 @@ class hex:
     if self.orientation == HORIZONTAL:
 
       # Offsets
-      # oX = math.cos(math.pi/6)*self.radius # Offset x
       oX = self.inradius # Offset x
       oY = math.sin(math.pi/6)*self.radius # Offset Y
 
@@ -265,9 +268,9 @@ class hex:
       pts.append((sX - oX, sY - oY))
       pts.append((sX - oX, sY + oY))
 
-      r  = r*0.965
-      oX = oX*0.965
-      oY = oY*0.965
+      r  = r*0.97
+      oX = oX*0.97
+      oY = oY*0.97
 
       brd.append((sX,      sY + r ))
       brd.append((sX + oX, sY + oY))
@@ -289,9 +292,9 @@ class hex:
       pts.append((sX - oX, sY + oY))
       pts.append((sX + oX, sY + oY))
 
-      r  = r*0.96
-      oX = oX*0.96
-      oY = oY*0.96
+      r  = r*0.97
+      oX = oX*0.97
+      oY = oY*0.97
 
       brd.append((sX + r,  sY))
       brd.append((sX + oX, sY - oY ))
@@ -317,24 +320,32 @@ class hex:
       WIN.blit(WINNER_FONT.render('4', 1, WHITE), (pts[4][0], pts[4][1]))
       WIN.blit(WINNER_FONT.render('5', 1, WHITE), (pts[5][0], pts[5][1]))
 
-    pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)    
+    pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)
     pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.cell_size*0.25), self.center_color)
 
     # text = HEALTH_FONT.render(str(self.id),True,WHITE)
     # text_rect = text.get_rect(center=(self.x, self.y))
     # WIN.blit(text,text_rect)
 
+    if self.active == False:
+
+      pygame.draw.polygon(WIN, VASARELY_COLORS.GRAY.value, self.points, width=1)
+
     if self.hit:
-      
+
       app.current_cell = self
 
-      pygame.draw.polygon(WIN, WHITE, self.border, width=5)
+      pygame.draw.polygon(WIN, WHITE, self.border, width=3)
       # pygame.gfxdraw.aapolygon(w, self.points, VASARELY_COLORS.RED.value)
 
-      text = HEALTH_FONT.render(str(self.col) + ', ' + str(self.row),True,WHITE)
+      text = HEALTH_FONT.render(str(self.row) + ', ' + str(self.col), True, WHITE)
       text_rect = text.get_rect(center=(self.x, self.y))
-      WIN.blit(text,text_rect)
-      
+      WIN.blit(text, text_rect)
+
+      if self.top != None:
+        
+        pygame.draw.polygon(WIN, RED, self.top.border, width=15)
+
       # draw_text()
 
       # draw_text = WINNER_FONT.render('3', 1, WHITE)
@@ -363,6 +374,7 @@ class hex:
   def click(self) -> None:
 
     if self.hit:
+
       app.current_cell = self
       # p(self.id)
       if self.center_color == self.color:
@@ -387,8 +399,6 @@ def load_grid_horizontal():
 
   p('HORIZONTAL')
 
-  hex.id = 0
-
   # Add center row
   sz = app.cell_size*1/math.cos(math.pi/6)
   
@@ -401,7 +411,7 @@ def load_grid_horizontal():
 
     colPos = app.cell_size + cell*sz*math.cos(math.pi/6)
 
-    h=hex(colPos, HEIGHT/2, sz, get_Color(), app.orientation)
+    h=hex(colPos, HEIGHT/2, sz, get_Color())
 
     temp.append(h)
     app.swap.append(h)
@@ -426,7 +436,7 @@ def load_grid_horizontal():
       rowPos = HEIGHT/2 - row_offset * (row+1)
       colPos = app.cell_size + col*coef + row*coef/2 + coef/2
 
-      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
+      h = hex(colPos, rowPos, sz, get_Color())
 
       above.append(h)
       app.swap.append(h)
@@ -435,7 +445,7 @@ def load_grid_horizontal():
       rowPos = HEIGHT/2 + row_offset * (row+1)
       colPos = app.cell_size + col*coef + row*coef/2 + coef/2
 
-      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
+      h = hex(colPos, rowPos, sz, get_Color())
 
       below.append(h)
       app.swap.append(h)
@@ -447,136 +457,65 @@ def load_grid_horizontal():
 
     above = []
     below = []
-
-  for col in range(len(app.grid)):
-    for row in range(len(app.grid[col])):
-
-      app.grid[col][row].col = col
-      app.grid[col][row].row = row
       
   # p(app.swap)
 
   # p(hex.counter)
 
-def _load_grid_vertical():
-
-  # try:
-
-  p('VERTICAL')
-
-  hex.id = 0
-
-  # Add center col
-  sz = app.cell_size*1/math.cos(math.pi/6)
-  
-  app.grid.clear
-  app.swap.clear
-
-  temp = []
-
-  for cell in range(app.grid_size):
-
-    rowPos = (cell+1)*sz*math.cos(math.pi/6)
-    # rowPos = app.cell_size + cell*sz*math.cos(math.pi/6)
-
-    h = hex(HEIGHT/2, rowPos, sz, get_Color(), app.orientation)
-
-    temp.append(h)
-    app.swap.append(h)
-
-  app.grid.append(temp)
-
-  # Add Columns left and right
-  col_offset = sz - sz*math.sin(math.pi/6)/2
-  
-  above = []
-  below = []
-
-  row_limit = int(app.grid_size-1)
-  col_limit = math.ceil(app.grid_size/2-1)
-
-  coef = sz*math.cos(math.pi/6)
-
-  for col in range(col_limit):
-    for row in range(row_limit):
-
-      # Add to Start
-      colPos = HEIGHT/2 - col_offset * (col+1)
-      rowPos = (row + 1)*coef + col*coef/2 + coef/2
-
-      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
-
-      above.append(h)
-      app.swap.append(h)
-
-      # Add to end
-      colPos = HEIGHT/2 + col_offset * (col+1)
-      rowPos = (row + 1)*coef + col*coef/2 + coef/2
-
-      h = hex(colPos, rowPos, sz, get_Color(), app.orientation)
-
-      below.append(h)
-      app.swap.append(h)
-
-    app.grid.insert(0,above)
-    app.grid.append(below)
-    
-    row_limit-=1
-
-    above = []
-    below = []
-
-  for col in range(len(app.grid)):
-    for row in range(len(app.grid[col])):
-
-      app.grid[col][row].col = col
-      app.grid[col][row].row = row
-
-  # except:
-
-  #   p('Load Grid Horizontal Error' + Exception.__name__)
-
 def load_grid_vertical():
-
-  # try:
-
+ 
   p('VERTICAL')
-
-  hex.id = 0
 
   radius = app.cell_size*1/math.cos(math.pi/6)
   
-  app.grid.clear
-  app.swap.clear
-
-  temp = []
-
   limit = app.grid_size
 
-  inradius = radius*math.cos(math.pi/6)
+  inRadius = radius*math.cos(math.pi/6)
 
   for row in range(limit):
-    for col in range(limit):
+    
+    temp = []
 
-      # Add to Start1
+    for col in range(limit):
+    
       colPos = 2.5 * radius/2 + (0.75 * radius) * col
 
-      if   col%2 == 0:  rowPos = inradius * 0.75 + row * inradius + inradius/2
-      elif col%2 == 1:  rowPos = inradius * 0.75 + row * inradius
+      if    col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
+      else:             rowPos = inRadius * 0.75 + row * inRadius
 
-      h = hex(colPos, rowPos, radius, get_Color(), app.orientation)
+      h = hex(colPos, rowPos, radius, get_Color())
 
-      # app.grid[col][row].col = col
-      # app.grid[col][row].row = row
+      h.col = col
+      h.row = row
 
       temp.append(h)
-      app.swap.append(h)
 
     app.grid.append(temp)
 
-  # except:
+def shuffle_grid():
 
-  #   p('Load Grid Horizontal Error' + Exception.__name__)
+  def get_cell():
+    
+    length = len(app.grid)
+
+    return app.grid[int(random.random()*length)] \
+                   [int(random.random()*length)]
+
+  for rowIndex, row in enumerate(app.grid):
+    for colIndex, col in enumerate(row):
+      
+      cell = app.grid[rowIndex][colIndex]
+      temp = cell.center_color
+
+      random_cell = get_cell()
+
+      while (cell.center_color == random_cell.color) or \
+            (cell.color == random_cell.center_color):
+      
+        random_cell = get_cell()
+
+      cell.center_color = random_cell.center_color
+      random_cell.center_color = temp
 
 #endregion - Load Grid --------------------------------------------------------
 
@@ -588,8 +527,8 @@ def get_count() -> int:
 
     count=0 
 
-    for row in range(len(app.grid)):
-      for col in range(len(app.grid[row])):
+    for row in app.grid:
+      for col in row:
         count+=1
 
     return count
@@ -602,46 +541,27 @@ def connect_grid():
 
   def load_up_down():
 
-    try:
-      
-      g = app.grid
+    # try:
 
-      for row in range(len(g)):
-        for col in range(len(g[row])):
-          
-          if row == 0: g[col][row].top = g[len(g)-1][row]
-          else:        g[col][row].top = g[col][row-1]
+    g = app.grid
 
-    except:
+    for rowIndex, row in enumerate(g):
+      for colIndex, cell in enumerate(row):
+        # p(row)
+        if rowIndex == 0: cell.top = g[len(g)-1][colIndex]
+        else:             cell.top = g[rowIndex-1][colIndex]
 
-      p('ERROR LOADING UP / DOWN ' + str(row) + ', ' + str(col))
+    # except:
+
+    #   p('ERROR LOADING UP / DOWN ' + str(row) + ', ' + str(col))
 
   # load_up_down()
 
-def swap_grid():
-
-  def get_cell():
-    
-    return app.swap[int(random.random()*len(app.swap))]
-
-  for cell in range(len(app.swap)):
-    
-    temp = app.swap[cell].center_color    
-    random_cell = get_cell()
-    
-    while (app.swap[cell].center_color == random_cell.color) or \
-          (app.swap[cell].color == random_cell.center_color):
-
-      random_cell = get_cell()
-
-    app.swap[cell].center_color = random_cell.center_color
-    random_cell.center_color = temp
-
 def draw_board():
     
-  for row in range(len(app.grid)):
-    for col in range(len(app.grid[row])):
-      app.grid[row][col].draw()
+  for row in app.grid:
+    for cell in row:
+      cell.draw()
 
 def draw_window():
 
@@ -656,7 +576,7 @@ def draw_window():
     # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
 
     if app.current_cell is not None:
-      WIN.blit(WINNER_FONT.render(str(app.current_cell.id), 1, WHITE), (20, 20))
+      WIN.blit(WINNER_FONT.render(str(app.current_cell.row), 1, WHITE), (20, 20))
       WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
 
     pygame.display.update()
@@ -667,45 +587,54 @@ def draw_window():
 
 def up():
 
-  # try:
+  p(get_count())
 
-    g = app.grid
-    cell = app.current_cell
-    length = len(app.grid[app.current_cell.col])
+  temp = []
+
+  for row in app.grid:
+    temp.clear()
+    for col in row:
+      temp.append(col.id)
+    print(temp)
     
-    temp_color = app.grid[cell.col][0].center_color
     
-    for row in range(length):
-      
-      if row == length-1: g[cell.col][row].center_color = temp_color
-      else:               g[cell.col][row].center_color = g[cell.col][row+1].center_color
+  g = app.grid
+  col = app.current_cell.col
+  length = len(g)-1
 
-    increment_moves()
+  # app.grid[0][0].center_color = app.grid[1][0].center_color
 
-  # except:
+  p(app.grid[1][1].center_color)
+  p(app.grid[2][2].center_color)
+  p("====")
 
-  #   Mbox('Exception - Hexy.py', 'up() - ' + Exception.__name__, 1)
+  app.grid[5][5].center_color = app.current_cell.center_color
+  return
+
+
+  temp_color = app.grid[0][app.current_cell.col].center_color
+
+  for rowIndex, row in enumerate(g):
+    
+    if rowIndex == length: row[col].center_color = temp_color
+    else:                  row[col].center_color = g[rowIndex+1][col].center_color
+
+  increment_moves()
 
 def down():
+
+  g = app.grid
+  col = app.current_cell.col
+  length = len(g)
   
-  # try:
-
-    g = app.grid
-    cell = app.current_cell
-    length = len(app.grid[app.current_cell.col])
+  temp_color = g[0][length-1].center_color
+  
+  for rowIndex, row in enumerate(reversed(g)):
     
-    temp_color = app.grid[cell.col][length-1].center_color
-    
-    for row in reversed(range(length)):
-      
-      if row == 0: g[cell.col][row].center_color = temp_color
-      else:        g[cell.col][row].center_color = g[cell.col][row-1].center_color
+    if row == 0: row[col].center_color = temp_color
+    else:        row[col].center_color = g[rowIndex-1][col].center_color
 
-    increment_moves()
-
-  # except:
-
-  #   p('down() Error' + Exception.__name__)
+  increment_moves()
 
 def increment_moves(): app.moves+=1
 
@@ -721,20 +650,19 @@ def toggle_orientation():
   if app.orientation == HORIZONTAL:
     
     app.orientation = VERTICAL
-    app.grid.clear()
-    app.swap.clear()
-
-    load_grid()
-
+    hex.orientation = VERTICAL
+  
   else:                 
     
     app.orientation = HORIZONTAL
-    app.grid.clear()
-    app.swap.clear()
-
-    load_grid()
+    hex.orientation = HORIZONTAL
     
-  swap_grid()
+  app.grid.clear()
+  app.swap.clear()
+
+  load_grid()
+  
+  shuffle_grid()
 
 def reset_grid():
 
@@ -742,11 +670,10 @@ def reset_grid():
   
   app.moves = -0
   app.grid.clear()
-  app.swap.clear()
 
   load_grid()     # Load the grid... duh
   connect_grid()  # Load cell adjacentcy (above/below etc)
-  swap_grid()     # Scramble the inner circles
+  shuffle_grid()  # Scramble the inner circles
 
 def increment_grid():
 
@@ -766,12 +693,13 @@ def decrement_grid():
 
 def check_cells():
 
-    for col in range(len(app.grid)):
-      for row in range(len(app.grid[col])):
+  for row in app.grid:
+    for cell in row:
 
-        if app.grid[col][row].color ==  app.grid[col][row].center_color:
-          app.grid[col][row].color        = VASARELY_COLORS.TRANSPARENT.value
-          app.grid[col][row].center_color = VASARELY_COLORS.TRANSPARENT.value
+        if cell.color == cell.center_color:
+          cell.color        = VASARELY_COLORS.TRANSPARENT.value
+          cell.center_color = VASARELY_COLORS.TRANSPARENT.value
+          cell.active = False
 
 #endregion - Commands ---------------------------------------------------------
 
@@ -802,12 +730,11 @@ def handle_click(event):
 
   def left_click():
 
-    for row in range(len(app.grid)):
-      for col in range(len(app.grid[row])):        
-        app.grid[row][col].click()
+    for row in app.grid:
+      for cell in row:        
+        cell.click()
 
-    for row in range(len(app.grid)):
-      p(app.grid[row][app.current_cell.col].col)
+    # for row in app.grid:
 
   if   event.button == LEFT:        left_click()
   elif event.button == SCROLL_UP:   up();         check_cells()   #increment_grid()
@@ -817,9 +744,9 @@ def handle_click(event):
 
 def handle_move():
 
-  for row in range(len(app.grid)):
-    for col in range(len(app.grid[row])):
-      app.grid[row][col].move()  
+  for row in app.grid:
+    for cell in row:
+      cell.move()  
 
 #endregion - Events -----------------------------------------------------------
 
