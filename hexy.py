@@ -45,6 +45,8 @@ def Mbox(title, text, style):
 
 #region - Constants ===========================================================
 
+DEBUG = False
+
 # Initial Display Size
 WIDTH  = 1000
 HEIGHT = 1000
@@ -676,45 +678,90 @@ def connect_grid():
     # try:
 
     g = app.grid
+    sz = len(g)-1
 
     for rowIndex, row in enumerate(g):
       for colIndex, cell in enumerate(row):
-        
+
+        even_Col = colIndex%2==0
+
         # Top 
-        if rowIndex == 0:                  cell.top = g[len(g)-1][colIndex]
+        if rowIndex == 0:                  cell.top = g[len(g)-1  ][colIndex]
         else:                              cell.top = g[rowIndex-1][colIndex]
 
         # Bottom
-        if rowIndex == len(g)-1:           cell.bottom = g[0][colIndex]
+        if rowIndex == len(g)-1:           cell.bottom = g[0         ][colIndex]
         else:                              cell.bottom = g[rowIndex+1][colIndex]
 
         # Upper Left
-        if rowIndex == 0:                  cell.upper_left = g[len(g)-1][colIndex-1]
-        else:                              cell.upper_left = g[rowIndex-1][colIndex-1]
+        if(colIndex == 0):
+
+          cell.upper_left = g[rowIndex][colIndex-1]
+        
+        else:
+
+          if(rowIndex==0):
+            
+            if(even_Col):  cell.upper_left = g[rowIndex  ][colIndex-1]
+            else:          cell.upper_left = None
+
+          else:             
+            
+            if(even_Col):  cell.upper_left = g[rowIndex  ][colIndex-1]              
+            else:          cell.upper_left = g[rowIndex-1][colIndex-1]
+            
 
         # Upper Right
-        # if rowIndex == 1:
+        if(colIndex == sz):
           
-        #   if rowIndex==6: cell.upper_right = g[0][3]
-        #   else:           cell.upper_right = g[len(g)-1][colIndex]
-
-        # elif rowIndex%2 == 0:
-
-        #   if rowIndex==6: cell.upper_right = g[0][3]
-        #   else:           cell.upper_right = g[len(g)][colIndex]
-
-        # else:
+          cell.lower_right = None
+        
+        else:
           
-        #   if rowIndex==6: cell.upper_right = g[0][3]
-        #   else:           cell.upper_right = g[len(g)][colIndex]
+          if(rowIndex == 0):
 
-        # # Lower Left
-        # if rowIndex == 6 or colIndex == 1: cell.lower_left = None
-        # else:                              cell.lower_left = g[rowIndex][colIndex-1]
+            if(even_Col):  cell.upper_right = g[rowIndex][colIndex+1]
+            else:          cell.upper_right = None
 
-        # # Lower Right
-        # if rowIndex == 6 or colIndex == 6: cell.lower_right = None
-        # else:                              cell.lower_right = g[rowIndex][colIndex+1]
+          else:
+
+            if(even_Col):  cell.upper_right = g[rowIndex  ][colIndex+1]
+            else:          cell.upper_right = g[rowIndex-1][colIndex+1]
+
+        # Lower Left
+        if(colIndex == 0):
+
+          cell.lower_left = None
+        
+        else:
+
+          if(rowIndex==sz):
+            
+            if(even_Col):  cell.lower_left = None
+            else:          cell.lower_left = g[rowIndex][colIndex-1]
+
+          else:             
+            
+            if(even_Col):  cell.lower_left = g[rowIndex+1][colIndex-1]
+            else:          cell.lower_left = g[rowIndex][colIndex-1]
+
+        # Lower Right
+        if(colIndex == sz):
+          
+          cell.lower_right = None
+        
+        else:
+          
+          if(rowIndex==sz):
+
+            if(even_Col):  cell.lower_right = None
+            else:          cell.lower_right = g[rowIndex][colIndex+1]
+
+          else:
+
+            if(even_Col):  cell.lower_right = g[rowIndex+1][colIndex+1]
+            else:          cell.lower_right = g[rowIndex  ][colIndex+1]
+
 
     # except:
 
@@ -732,7 +779,7 @@ def draw_board():
     for cell in row:
       cell.draw()
 
-  app.current_cell.draw_links()
+  if DEBUG: app.current_cell.draw_links()
 
 def draw_window():
 
@@ -856,7 +903,7 @@ def check_cells():
 
 def current_cell_move(direction):
 
-  if direction == DIRECTIONS.UP:
+  if   direction == DIRECTIONS.UP:
     if app.current_cell.top is not None: app.current_cell = app.current_cell.top 
 
   elif direction == DIRECTIONS.DOWN:    
@@ -869,7 +916,7 @@ def current_cell_move(direction):
     if app.current_cell.upper_right is not None: app.current_cell = app.current_cell.upper_right
 
   elif direction == DIRECTIONS.DOWN_LEFT:
-    if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_right
+    if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_left
 
   elif direction == DIRECTIONS.DOWN_RIGHT:
     if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_right
@@ -882,13 +929,17 @@ def handle_keys(event):
 
   key = event.key
 
+
   if event.mod & pygame.KMOD_CTRL:
 
     if   key == pygame.K_SPACE: toggle_orientation()
-    elif key == pygame.K_UP:    increment_grid()
-    elif key == pygame.K_DOWN:  decrement_grid()
     elif key == pygame.K_LEFT:  current_cell_move(DIRECTIONS.DOWN_LEFT)
     elif key == pygame.K_RIGHT: current_cell_move(DIRECTIONS.DOWN_RIGHT)
+
+  elif event.mod & pygame.KMOD_ALT:
+
+    if   key == pygame.K_UP:    increment_grid()
+    elif key == pygame.K_DOWN:  decrement_grid()
 
   else:
 
