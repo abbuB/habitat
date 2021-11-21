@@ -15,6 +15,7 @@ import sys
 
 from sys import winver
 import pygame
+from pygame.locals import *
 from pygame import gfxdraw
 from pygame.constants import KEYUP
 import os
@@ -32,7 +33,9 @@ pygame.font.init()
 pygame.mixer.init()
 pygame.init()
 
-import ctypes  # An included library with Python install.
+pygame.RESIZABLE
+
+import ctypes  # An included library with Python install
 
 def Mbox(title, text, style):
   
@@ -46,13 +49,18 @@ def Mbox(title, text, style):
 WIDTH  = 1000
 HEIGHT = 1000
 
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+WIN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 
 pygame.display.set_caption("Habitat for Humanity Game")
 
 # Color Constants
-WHITE = (255,255,255,128)
-RED = (255,0,0,128)
+WHITE  = (255,255,255,255)
+BLACK  = (  0,  0,  0,255)
+RED    = (255,  0,  0,255)
+GREEN  = (  0,255,  0,255)
+BLUE   = (  0,  0,255,255)
+YELLOW = (255,255,  0,255)
+
 BACKGROUND = (8,8,8)
 
 # Mouse Button Constants
@@ -69,6 +77,15 @@ Y = 1
 # Orientation
 VERTICAL = 0
 HORIZONTAL = 1
+
+class DIRECTIONS(Enum):
+
+  UP         = 0
+  DOWN       = 1
+  UP_LEFT    = 2
+  UP_RIGHT   = 3
+  DOWN_LEFT  = 4
+  DOWN_RIGHT = 5
 
 class VASARELY_COLORS(Enum):
 
@@ -96,7 +113,6 @@ class VASARELY_COLORS(Enum):
   GRAY        = (122,135,191)
   
   TRANSPARENT = (255,0,0,0)
-
 
 class COLORS(IntEnum):
 
@@ -194,6 +210,9 @@ class App:
     self.orientation = VERTICAL
     self.moves = 0
 
+    self.mouseX = 0
+    self.mouseY = 0
+
 class point:
 
   def __init__(self, x, y) -> None:
@@ -201,10 +220,30 @@ class point:
     self.x = x
     self.y = y
 
+def semi_perimeter(a,b,c):  # a, b, and c are lengths of the triangles sides
+
+  return (a+b+c)/2
+
+def triangle_area(a,b,c):
+
+  s = semi_perimeter(a,b,c)
+
+  temp = s*(s-a)*(s-b)*(s-c)
+
+  retval = 0
+
+  if temp > 0: retval = math.floor(math.sqrt(temp))
+  
+  return retval
+
 class hex:
 
   id = 0
   orientation = VERTICAL
+  area = 0
+  perimeter = 0
+  side_length = 0
+  tri_area = 0
 
   def __init__(self, x, y, diameter, color) -> None:
 
@@ -212,9 +251,10 @@ class hex:
 
     hex.id+=1                                       # Increment overall object count
 
-    self.x = int(x)                                 # horizontal position of centre
-    self.y = int(y)                                 # vertical position of centre
-    
+    self._x = int(x)                                # horizontal position of centre
+    self._y = int(y)                                # vertical position of centre
+    # self._z = int(z)                                # vertical position of centre
+
     self.row = 0                                    # row of cell in grid array
     self.col = 0                                    # col of cell in grid array
 
@@ -231,25 +271,25 @@ class hex:
     self.color = color                              # Background Color
     self.center_color = color                       # Interior Color
 
-    self.hit = False                                # Mouse is currently over the cellw
+    self.hit = False                                # Mouse is currently over the cell
     self.active = True                              # Cell has not been solved
 
     # References to adjacent cells - Cells wrap
-    self.top = None                                 # Reference to the cell above
-    self.bottom = None                              # Reference to the cell below
+    self.top = None                                 # cell above
+    self.bottom = None                              # cell below
 
-    self.upper_right = None                         # Reference to the cell above right
-    self.upper_left = None                          # Reference to the cell above left
+    self.upper_right = None                         # cell above right
+    self.upper_left = None                          # cell above left
 
-    self.lower_right = None                         # Reference to the cell below right
-    self.lower_left = None                          # Reference to the cell below left
+    self.lower_right = None                         # cell below right
+    self.lower_left = None                          # cell below left
 
-    self.left = None                                # Reference to the cell left
-    self.right = None                               # Reference to the cell right
-
+    self.left = None                                # cell left
+    self.right = None                               # cell right
+    
     # Aliases
-    sX = self.x
-    sY = self.y
+    sX = self._x
+    sY = self._y
     r = self.radius
     pts = self.points
     brd = self.border
@@ -303,6 +343,23 @@ class hex:
       brd.append((sX - oX, sY + oY))
       brd.append((sX + oX, sY + oY))
 
+    if hex.area == 0:
+      
+      # p("Calculate Area")
+      pts = self.points
+
+      a = math.floor(math.dist((self.center.x, self.center.y), (pts[0][X], pts[0][Y])))
+      b = math.floor(math.dist((self.center.x, self.center.y), (pts[1][X], pts[1][Y])))
+      c = math.floor(math.dist((pts[0][X], pts[5][0]), (pts[1][X], pts[1][Y])))
+
+      hex.perimeter = c * 6 # Perimeter is six times side length
+      hex.side_length = a
+
+      hex.tri_area = math.floor(triangle_area(a,b,c))
+      hex.area = hex.tri_area * 6
+
+      # p(str(hex.area) + ", " + str(hex.perimeter))
+
   def reset(self):
 
     id = 0
@@ -313,15 +370,17 @@ class hex:
       
       pts = self.points
 
-      WIN.blit(WINNER_FONT.render('0', 1, WHITE), (pts[0][0], pts[0][1]))
-      WIN.blit(WINNER_FONT.render('1', 1, WHITE), (pts[1][0], pts[1][1]))
-      WIN.blit(WINNER_FONT.render('2', 1, WHITE), (pts[2][0], pts[2][1]))
-      WIN.blit(WINNER_FONT.render('3', 1, WHITE), (pts[3][0], pts[3][1]))
-      WIN.blit(WINNER_FONT.render('4', 1, WHITE), (pts[4][0], pts[4][1]))
-      WIN.blit(WINNER_FONT.render('5', 1, WHITE), (pts[5][0], pts[5][1]))
+      WIN.blit(WINNER_FONT.render('0', 1, WHITE), (pts[0][X], pts[0][Y]))
+      WIN.blit(WINNER_FONT.render('1', 1, WHITE), (pts[1][X], pts[1][Y]))
+      WIN.blit(WINNER_FONT.render('2', 1, WHITE), (pts[2][X], pts[2][Y]))
+      WIN.blit(WINNER_FONT.render('3', 1, WHITE), (pts[3][X], pts[3][Y]))
+      WIN.blit(WINNER_FONT.render('4', 1, WHITE), (pts[4][X], pts[4][Y]))
+      WIN.blit(WINNER_FONT.render('5', 1, WHITE), (pts[5][X], pts[5][Y]))
 
     pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)
-    pygame.gfxdraw.filled_circle(WIN, self.x, self.y, int(app.cell_size*0.25), self.center_color)
+    pygame.gfxdraw.filled_circle(WIN, self._x, self._y, int(app.cell_size*0.25), self.center_color)
+
+    if app.current_cell == self: pygame.draw.polygon(WIN, WHITE, self.border, width=3)
 
     # text = HEALTH_FONT.render(str(self.id),True,WHITE)
     # text_rect = text.get_rect(center=(self.x, self.y))
@@ -330,42 +389,154 @@ class hex:
     if self.active == False:
 
       pygame.draw.polygon(WIN, VASARELY_COLORS.GRAY.value, self.points, width=1)
+      self.color = VASARELY_COLORS.TRANSPARENT.value
 
     if self.hit:
 
-      app.current_cell = self
-
-      pygame.draw.polygon(WIN, WHITE, self.border, width=3)
+      pygame.draw.polygon(WIN, WHITE, self.border, width=1)
       # pygame.gfxdraw.aapolygon(w, self.points, VASARELY_COLORS.RED.value)
 
-      text = HEALTH_FONT.render(str(self.row) + ', ' + str(self.col), True, WHITE)
-      text_rect = text.get_rect(center=(self.x, self.y))
+      # text = HEALTH_FONT.render(str(self.row) + ', ' + str(self.col), True, WHITE)
+      text = HEALTH_FONT.render(str(self.active), True, WHITE)
+      text_rect = text.get_rect(center=(self._x, self._y))
       WIN.blit(text, text_rect)
 
-      if self.top != None:
-        
-        pygame.draw.polygon(WIN, RED, self.top.border, width=15)
+      # if self.top != None:          pygame.draw.line(WIN, RED, (self._x, self._y), (self.top._x, self.top._y), width=5)
+      # if self.bottom != None:       pygame.draw.line(WIN, GREEN, (self._x, self._y), (self.bottom._x, self.bottom._y), width=5)
+      
+      # if self.upper_left != None:   pygame.draw.line(WIN, YELLOW, (self._x, self._y), (self.upper_left._x, self.upper_left._y), width=5)
+      # if self.upper_right != None:  pygame.draw.line(WIN, BLUE, (self._x, self._y), (self.upper_right._x, self.upper_right._y), width=5)
+      
+      # if self.lower_left != None:   pygame.draw.line(WIN, BLACK, (self._x, self._y), (self.lower_left._x, self.lower_left._y), width=5)
+      # if self.lower_right != None:  pygame.draw.line(WIN, WHITE, (self._x, self._y), (self.lower_right._x, self.lower_right._y), width=5)
 
       # draw_text()
 
       # draw_text = WINNER_FONT.render('3', 1, WHITE)
 
-      # WIN.blit(WINNER_FONT.render(str(self.x)+','+str(self.y), 1, WHITE), (self.x, self.y))
+      # WIN.blit(WINNER_FONT.render(str(self._x)+','+str(self._y), 1, WHITE), (self._x, self._y))
 
-      # WIN.blit(WINNER_FONT.render('0', 1, WHITE), (self.points[0][0], self.points[0][1]))
-      # WIN.blit(WINNER_FONT.render('1', 1, WHITE), (self.points[1][0], self.points[1][1]))
-      # WIN.blit(WINNER_FONT.render('2', 1, WHITE), (self.points[2][0], self.points[2][1]))
-      # WIN.blit(WINNER_FONT.render('3', 1, WHITE), (self.points[3][0], self.points[3][1]))
-      # WIN.blit(WINNER_FONT.render('4', 1, WHITE), (self.points[4][0], self.points[4][1]))
-      # WIN.blit(WINNER_FONT.render('5', 1, WHITE), (self.points[5][0], self.points[5][1]))
+      # WIN.blit(WINNER_FONT.render('0', 1, WHITE), (self.points[0][X]-20, self.points[0][Y]-10))
+      # WIN.blit(WINNER_FONT.render('1', 1, WHITE), (self.points[1][X]-15, self.points[1][Y]+10))
+      # WIN.blit(WINNER_FONT.render('2', 1, WHITE), (self.points[2][X], self.points[2][Y]))
+      # WIN.blit(WINNER_FONT.render('3', 1, WHITE), (self.points[3][X], self.points[3][Y]))
+      # WIN.blit(WINNER_FONT.render('4', 1, WHITE), (self.points[4][X], self.points[4][Y]))
+      # WIN.blit(WINNER_FONT.render('5', 1, WHITE), (self.points[5][X], self.points[5][Y]))
+
+  def draw_links(self):
+
+    if self.top != None:          pygame.draw.line(WIN, RED, (self._x, self._y), (self.top._x, self.top._y), width=5)
+    if self.bottom != None:       pygame.draw.line(WIN, GREEN, (self._x, self._y), (self.bottom._x, self.bottom._y), width=5)
+    
+    if self.upper_left != None:   pygame.draw.line(WIN, YELLOW, (self._x, self._y), (self.upper_left._x, self.upper_left._y), width=5)
+    if self.upper_right != None:  pygame.draw.line(WIN, BLUE, (self._x, self._y), (self.upper_right._x, self.upper_right._y), width=5)
+    
+    if self.lower_left != None:   pygame.draw.line(WIN, BLACK, (self._x, self._y), (self.lower_left._x, self.lower_left._y), width=5)
+    if self.lower_right != None:  pygame.draw.line(WIN, WHITE, (self._x, self._y), (self.lower_right._x, self.lower_right._y), width=5)
 
   def hitTest(self):
+    
+    def get_area(p0, p1):
+    
+      retval = 0
 
-    x = pygame.mouse.get_pos()[X]
-    y = pygame.mouse.get_pos()[Y]
+      x = app.mouseX
+      y = app.mouseY
 
-    if(math.dist((self.x, self.y), (x, y))<=self.radius): self.hit = True
-    else:                                                 self.hit = False
+      a = math.dist((p0[X], p0[Y]), (p1[X], p1[Y]))
+      b = math.dist((x,     y),     (p0[X], p0[Y]))
+      c = math.dist((x,     y),     (p1[X], p1[Y]))
+
+      area = triangle_area(a,b,c)
+
+      if area>0: retval = area
+      else:      retval = math.inf
+
+      return retval
+
+    def rectangle():
+      
+      retval = False
+
+      x = app.mouseX
+      y = app.mouseY
+
+      assert x>=0, "Rectangle X is fucked"
+      assert y>=0, "Rectangle Y is fucked"
+
+      if(x>self.points[2][X] and
+         x<self.points[1][X] and
+         y>self.points[2][Y] and
+         y<self.points[4][Y]): retval = True
+
+      return retval
+
+    def right_triangle():
+      
+      retval = False
+
+      pts = self.points
+
+      A_area = get_area(pts[0],pts[1])
+      B_area = get_area(pts[1],pts[5])
+      C_area = get_area(pts[5],pts[0])
+
+      area = A_area + B_area + C_area
+
+      a = math.dist((pts[0][X], pts[0][Y]), (pts[1][X], pts[1][Y]))
+      b = math.dist((pts[1][X], pts[1][Y]), (pts[5][X], pts[5][Y]))
+      c = math.dist((pts[5][X], pts[5][Y]), (pts[0][X], pts[0][Y]))
+
+      t_area = triangle_area(a,b,c)
+
+      if(abs(area - t_area) <= 2):
+
+        retval = True
+
+      return retval
+
+    def left_triangle():
+      
+      retval = False
+
+      pts = self.points
+
+      A_area = get_area(pts[2],pts[3])
+      B_area = get_area(pts[3],pts[4])
+      C_area = get_area(pts[4],pts[2])
+
+      area = A_area + B_area + C_area
+
+      a = math.dist((pts[2][X], pts[2][Y]), (pts[3][X], pts[3][Y]))
+      b = math.dist((pts[3][X], pts[3][Y]), (pts[4][X], pts[4][Y]))
+      c = math.dist((pts[4][X], pts[4][Y]), (pts[2][X], pts[2][Y]))
+
+      t_area = triangle_area(a,b,c)
+
+      # p(area - t_area)
+
+      if(abs(area - t_area) <= 2):
+
+        retval = True
+
+      return retval
+
+    x = app.mouseX
+    y = app.mouseY
+
+    if math.dist((self._x, self._y), (x, y))<=self.radius:
+      
+      if rectangle() or right_triangle() or left_triangle():
+
+        self.hit = True
+
+      else: 
+
+        self.hit = False
+
+    else:
+      
+      self.hit = False
 
   def move(self):
 
@@ -397,79 +568,10 @@ def load_grid():
 
 def load_grid_horizontal():
 
-  p('HORIZONTAL')
-
-  # Add center row
-  sz = app.cell_size*1/math.cos(math.pi/6)
-  
-  app.grid.clear
-  app.swap.clear
-
-  temp = []
-
-  for cell in range(app.grid_size):
-
-    colPos = app.cell_size + cell*sz*math.cos(math.pi/6)
-
-    h=hex(colPos, HEIGHT/2, sz, get_Color())
-
-    temp.append(h)
-    app.swap.append(h)
-
-  app.grid.append(temp)
-
-  # Add Rows above and below
-  row_offset = sz - sz*math.sin(math.pi/6)/2
-  
-  above = []
-  below = []
-
-  col_limit = int(app.grid_size-1)
-  row_limit = math.ceil(app.grid_size/2-1)
-
-  coef = sz*math.cos(math.pi/6)
-
-  for row in range(row_limit):
-    for col in range(col_limit):
-
-      # Add to Start
-      rowPos = HEIGHT/2 - row_offset * (row+1)
-      colPos = app.cell_size + col*coef + row*coef/2 + coef/2
-
-      h = hex(colPos, rowPos, sz, get_Color())
-
-      above.append(h)
-      app.swap.append(h)
-
-      # Add to end
-      rowPos = HEIGHT/2 + row_offset * (row+1)
-      colPos = app.cell_size + col*coef + row*coef/2 + coef/2
-
-      h = hex(colPos, rowPos, sz, get_Color())
-
-      below.append(h)
-      app.swap.append(h)
-
-    app.grid.insert(0,above)
-    app.grid.append(below)
-    
-    col_limit-=1
-
-    above = []
-    below = []
-      
-  # p(app.swap)
-
-  # p(hex.counter)
-
-def load_grid_vertical():
- 
-  p('VERTICAL')
+  p('Horizontal')
 
   radius = app.cell_size*1/math.cos(math.pi/6)
-  
   limit = app.grid_size
-
   inRadius = radius*math.cos(math.pi/6)
 
   for row in range(limit):
@@ -480,13 +582,43 @@ def load_grid_vertical():
     
       colPos = 2.5 * radius/2 + (0.75 * radius) * col
 
-      if    col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
-      else:             rowPos = inRadius * 0.75 + row * inRadius
+      if col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
+      else:          rowPos = inRadius * 0.75 + row * inRadius
 
       h = hex(colPos, rowPos, radius, get_Color())
 
       h.col = col
       h.row = row
+
+      temp.append(h)
+
+    app.grid.append(temp)
+
+def load_grid_vertical():
+ 
+  p('VERTICAL')
+
+  radius = app.cell_size*1/math.cos(math.pi/6)
+  limit = app.grid_size
+  inRadius = radius*math.cos(math.pi/6)
+
+  for row in range(limit):
+    
+    temp = []
+
+    for col in range(limit):
+    
+      x = 2.5 * radius/2 + (0.75 * radius) * col
+
+      if col%2 == 0: y = inRadius * 0.75 + row * inRadius + inRadius/2
+      else:          y = inRadius * 0.75 + row * inRadius
+
+      h = hex(x, y, radius, get_Color())
+
+      h.col = col
+      h.row = row
+
+      # if row == 0 and col == 0: h.active = False
 
       temp.append(h)
 
@@ -547,21 +679,60 @@ def connect_grid():
 
     for rowIndex, row in enumerate(g):
       for colIndex, cell in enumerate(row):
-        # p(row)
-        if rowIndex == 0: cell.top = g[len(g)-1][colIndex]
-        else:             cell.top = g[rowIndex-1][colIndex]
+        
+        # Top 
+        if rowIndex == 0:                  cell.top = g[len(g)-1][colIndex]
+        else:                              cell.top = g[rowIndex-1][colIndex]
+
+        # Bottom
+        if rowIndex == len(g)-1:           cell.bottom = g[0][colIndex]
+        else:                              cell.bottom = g[rowIndex+1][colIndex]
+
+        # Upper Left
+        if rowIndex == 0:                  cell.upper_left = g[len(g)-1][colIndex-1]
+        else:                              cell.upper_left = g[rowIndex-1][colIndex-1]
+
+        # Upper Right
+        # if rowIndex == 1:
+          
+        #   if rowIndex==6: cell.upper_right = g[0][3]
+        #   else:           cell.upper_right = g[len(g)-1][colIndex]
+
+        # elif rowIndex%2 == 0:
+
+        #   if rowIndex==6: cell.upper_right = g[0][3]
+        #   else:           cell.upper_right = g[len(g)][colIndex]
+
+        # else:
+          
+        #   if rowIndex==6: cell.upper_right = g[0][3]
+        #   else:           cell.upper_right = g[len(g)][colIndex]
+
+        # # Lower Left
+        # if rowIndex == 6 or colIndex == 1: cell.lower_left = None
+        # else:                              cell.lower_left = g[rowIndex][colIndex-1]
+
+        # # Lower Right
+        # if rowIndex == 6 or colIndex == 6: cell.lower_right = None
+        # else:                              cell.lower_right = g[rowIndex][colIndex+1]
 
     # except:
 
     #   p('ERROR LOADING UP / DOWN ' + str(row) + ', ' + str(col))
 
-  # load_up_down()
+  load_up_down()
 
+  x = 1
+  assert x > 0, 'Only positive numbers are allowed'
+  # print('x is a positive number.')
+  
 def draw_board():
     
   for row in app.grid:
     for cell in row:
       cell.draw()
+
+  app.current_cell.draw_links()
 
 def draw_window():
 
@@ -570,6 +741,8 @@ def draw_window():
     WIN.fill(BACKGROUND)
 
     draw_board()
+    
+    
 
     w = WIDTH/(app.grid_size+1)
 
@@ -587,32 +760,11 @@ def draw_window():
 
 def up():
 
-  p(get_count())
-
-  temp = []
-
-  for row in app.grid:
-    temp.clear()
-    for col in row:
-      temp.append(col.id)
-    print(temp)
-    
-    
   g = app.grid
   col = app.current_cell.col
   length = len(g)-1
 
-  # app.grid[0][0].center_color = app.grid[1][0].center_color
-
-  p(app.grid[1][1].center_color)
-  p(app.grid[2][2].center_color)
-  p("====")
-
-  app.grid[5][5].center_color = app.current_cell.center_color
-  return
-
-
-  temp_color = app.grid[0][app.current_cell.col].center_color
+  temp_color = app.grid[0][col].center_color
 
   for rowIndex, row in enumerate(g):
     
@@ -624,15 +776,15 @@ def up():
 def down():
 
   g = app.grid
-  col = app.current_cell.col
+  colIndex = app.current_cell.col
   length = len(g)
   
-  temp_color = g[0][length-1].center_color
+  temp_color = g[length-1][colIndex].center_color
   
-  for rowIndex, row in enumerate(reversed(g)):
+  for rowIndex in reversed(range(len(g))):
     
-    if row == 0: row[col].center_color = temp_color
-    else:        row[col].center_color = g[rowIndex-1][col].center_color
+    if rowIndex == 0: g[rowIndex][colIndex].center_color = temp_color
+    else:             g[rowIndex][colIndex].center_color = g[rowIndex-1][colIndex].center_color
 
   increment_moves()
 
@@ -661,14 +813,15 @@ def toggle_orientation():
   app.swap.clear()
 
   load_grid()
-  
+  connect_grid()  # Load cell adjacentcy (above/below etc)
   shuffle_grid()
 
 def reset_grid():
 
   hex.id =  0
-  
-  app.moves = -0
+  hex.area = 0
+
+  app.moves = 0
   app.grid.clear()
 
   load_grid()     # Load the grid... duh
@@ -701,6 +854,26 @@ def check_cells():
           cell.center_color = VASARELY_COLORS.TRANSPARENT.value
           cell.active = False
 
+def current_cell_move(direction):
+
+  if direction == DIRECTIONS.UP:
+    if app.current_cell.top is not None: app.current_cell = app.current_cell.top 
+
+  elif direction == DIRECTIONS.DOWN:    
+    if app.current_cell.bottom is not None: app.current_cell = app.current_cell.bottom 
+
+  elif direction == DIRECTIONS.UP_LEFT:
+    if app.current_cell.upper_left is not None: app.current_cell = app.current_cell.upper_left
+
+  elif direction == DIRECTIONS.UP_RIGHT:
+    if app.current_cell.upper_right is not None: app.current_cell = app.current_cell.upper_right
+
+  elif direction == DIRECTIONS.DOWN_LEFT:
+    if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_right
+
+  elif direction == DIRECTIONS.DOWN_RIGHT:
+    if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_right
+
 #endregion - Commands ---------------------------------------------------------
 
 #region - Events ==============================================================
@@ -714,6 +887,8 @@ def handle_keys(event):
     if   key == pygame.K_SPACE: toggle_orientation()
     elif key == pygame.K_UP:    increment_grid()
     elif key == pygame.K_DOWN:  decrement_grid()
+    elif key == pygame.K_LEFT:  current_cell_move(DIRECTIONS.DOWN_LEFT)
+    elif key == pygame.K_RIGHT: current_cell_move(DIRECTIONS.DOWN_RIGHT)
 
   else:
 
@@ -723,6 +898,10 @@ def handle_keys(event):
     elif key == pygame.K_e:     up_right()
     elif key == pygame.K_a:     down_left()    
     elif key == pygame.K_d:     down_right()
+    elif key == pygame.K_UP:    current_cell_move(DIRECTIONS.UP)
+    elif key == pygame.K_DOWN:  current_cell_move(DIRECTIONS.DOWN)
+    elif key == pygame.K_LEFT:  current_cell_move(DIRECTIONS.UP_LEFT)
+    elif key == pygame.K_RIGHT: current_cell_move(DIRECTIONS.UP_RIGHT)
 
     check_cells()
 
@@ -744,16 +923,19 @@ def handle_click(event):
 
 def handle_move():
 
+  app.mouseX = pygame.mouse.get_pos()[X]
+  app.mouseY = pygame.mouse.get_pos()[Y]
+  
   for row in app.grid:
     for cell in row:
       cell.move()  
 
 #endregion - Events -----------------------------------------------------------
 
+#region - Main Loop ===========================================================
+
 reset_grid()
 app.current_cell = app.grid[0][0]
-
-#region - Main Loop ===========================================================
 
 def main():
 
@@ -770,12 +952,13 @@ def main():
       if event.type == pygame.QUIT:
         run = False
         pygame.quit()
-      
+        return
+
       if event.type == pygame.KEYUP:         handle_keys(event)
       if event.type == pygame.MOUSEBUTTONUP: handle_click(event)
       
       handle_move()
-  
+
     draw_window()  
     
 if __name__ == "__main__":
