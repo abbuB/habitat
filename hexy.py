@@ -392,7 +392,10 @@ class hex:
 
     if self.hit:
 
-      pygame.draw.polygon(WIN, WHITE, self.border, width=1)
+      if self.active:
+        
+        pygame.draw.polygon(WIN, WHITE, self.border, width=1)
+
       # pygame.gfxdraw.aapolygon(w, self.points, VASARELY_COLORS.RED.value)
 
       # text = HEALTH_FONT.render(str(self.row) + ', ' + str(self.col), True, WHITE)
@@ -554,7 +557,10 @@ class hex:
 
     if self.hit:
 
-      app.current_cell = self
+      if self.active:
+        
+        app.current_cell = self
+
       # p(self.id)
       if self.center_color == self.color:
 
@@ -872,8 +878,6 @@ def draw_window():
     WIN.fill(BACKGROUND)
 
     draw_board()
-    
-    
 
     w = WIDTH/(app.grid_size+1)
 
@@ -882,6 +886,7 @@ def draw_window():
     if app.current_cell is not None:
       WIN.blit(WINNER_FONT.render(str(app.current_cell.row), 1, WHITE), (20, 20))
       WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
+      WIN.blit(WINNER_FONT.render('Current Cell: ' + str(app.current_cell.id), 1, WHITE), (800, 20))
 
     pygame.display.update()
 
@@ -891,33 +896,69 @@ def draw_window():
 
 def increment_moves(): app.moves+=1
 
+def set_current_cell():
+
+  for rowIndex, row in enumerate(app.grid):
+    for colIndex, col in enumerate(row):
+      
+      p(col.active)
+      if col.active: 
+
+        app.current_cell = col
+        return
+        
 def move(direction):
+
+  def get_first_active(col) -> int:
+
+    for rowIndex, row in enumerate(app.grid):
+
+      if row[col].active:
+
+        return rowIndex
+
+  def get_last_active(col) -> int:
+
+    last_active = 0
+
+    for rowIndex, row in enumerate(app.grid):
+
+      if row[col].active:
+
+        last_active = rowIndex
+
+    return last_active
 
   def up():
 
     g = app.grid
     col = app.current_cell.col
-    length = len(g)-1
 
-    temp_color = app.grid[0][col].center_color
+    temp_color = g[get_first_active(col)][col].center_color
+    last_active = get_last_active(col)
 
     for rowIndex, row in enumerate(g):
       
-      if rowIndex == length: row[col].center_color = temp_color
-      else:                  row[col].center_color = g[rowIndex+1][col].center_color
+      if row[col].active:
+
+        if rowIndex == last_active: row[col].center_color = temp_color
+        else:                       row[col].center_color = row[col].bottom.center_color
 
   def down():
 
     g = app.grid
-    colIndex = app.current_cell.col
+    col = app.current_cell.col
     length = len(g)
     
-    temp_color = g[length-1][colIndex].center_color
-    
-    for rowIndex in reversed(range(len(g))):
+    temp_color = g[get_last_active(col)][col].center_color
+    first_active = get_first_active(col)
+
+    for row in reversed(range(length)):
       
-      if rowIndex == 0: g[rowIndex][colIndex].center_color = temp_color
-      else:             g[rowIndex][colIndex].center_color = g[rowIndex-1][colIndex].center_color
+      if g[row][col].active:
+
+        if row == first_active: g[row][col].center_color = temp_color
+        else:                   g[row][col].center_color = g[row][col].top.center_color
 
   def up_left():
 
@@ -1034,6 +1075,15 @@ def decrement_grid():
 
 def check_cells():
 
+  def reconnect_cell(hex):
+
+    hex.top.bottom = hex.bottom
+    hex.bottom.top = hex.top
+    # hex.upper_left.lower_right = hex.lower_right
+    # hex.upper_right.lower_left = hex.lower_left
+    # hex.lower_left.upper_right = hex.upper_right
+    # hex.lower_right.upper_left = hex.upper_left
+
   for row in app.grid:
     for cell in row:
 
@@ -1041,6 +1091,8 @@ def check_cells():
           cell.color        = VASARELY_COLORS.TRANSPARENT.value
           cell.center_color = VASARELY_COLORS.TRANSPARENT.value
           cell.active = False
+
+          reconnect_cell(cell)
 
 def current_cell_move(direction):
 
@@ -1069,7 +1121,6 @@ def current_cell_move(direction):
 def handle_keys(event):
 
   key = event.key
-
 
   if event.mod & pygame.KMOD_CTRL:
 
@@ -1101,6 +1152,10 @@ def handle_keys(event):
 
     check_cells()
 
+  if app.current_cell.active == False:
+
+    set_current_cell()
+
 def handle_click(event):
 
   def left_click():
@@ -1110,8 +1165,8 @@ def handle_click(event):
         cell.click()
 
   if   event.button == LEFT:        left_click()
-  elif event.button == SCROLL_UP:   up();         check_cells()   #increment_grid()
-  elif event.button == SCROLL_DOWN: down();       check_cells()   #decrement_grid()
+  elif event.button == SCROLL_UP:   move(DIRECTIONS.UP);    check_cells()
+  elif event.button == SCROLL_DOWN: move(DIRECTIONS.DOWN);  check_cells()
   elif event.button == CENTRE:      p('Wheel')
   elif event.button == RIGHT:       reset_grid()
 
@@ -1130,6 +1185,9 @@ def handle_move():
 
 reset_grid()
 app.current_cell = app.grid[0][0]
+
+# p(24/2)
+# p(24//2)
 
 def main():
 
