@@ -66,19 +66,24 @@ YELLOW = (255,255,  0,255)
 BACKGROUND = (8,8,8)
 
 # Mouse Button Constants
-LEFT        = 1
-CENTRE      = 2
-RIGHT       = 3
-SCROLL_UP   = 4
-SCROLL_DOWN = 5
+LEFT         = 1
+CENTRE       = 2
+RIGHT        = 3
+SCROLL_UP    = 4
+SCROLL_DOWN  = 5
 
 # Coordinate Constants
-X = 0
-Y = 1
+X            = 0
+Y            = 1
 
 # Orientation
-VERTICAL = 0
-HORIZONTAL = 1
+# VERTICAL     = 0
+# HORIZONTAL   = 1
+
+class ORIENTATIONS(Enum):
+
+  VERTICAL   = 0
+  HORIZONTAL = 1
 
 class DIRECTIONS(Enum):
 
@@ -204,12 +209,11 @@ class App:
     self.grid_size = grid_size    # of hexagonal layers - defaults to 7
 
     self.grid = []                # list holding the cell objects
-    self.swap = []                # list of references to cell objects
 
-    self.current_cell = None      # which hexagonal cell has the focus
+    self.focus_cell = None        # which hexagonal cell has the focus
     
     self.fps = 60                 # Frames Per Second
-    self.orientation = VERTICAL
+    self.orientation = ORIENTATIONS.VERTICAL
     self.moves = 0
 
     self.mouseX = 0
@@ -241,7 +245,7 @@ def triangle_area(a,b,c):
 class hex:
 
   id = 0
-  orientation = VERTICAL
+  orientation = ORIENTATIONS.VERTICAL
   area = 0
   perimeter = 0
   side_length = 0
@@ -280,11 +284,11 @@ class hex:
     self.top = None                                 # cell above
     self.bottom = None                              # cell below
 
-    self.upper_right = None                         # cell above right
-    self.upper_left = None                          # cell above left
+    self.top_right = None                         # cell above right
+    self.top_left = None                          # cell above left
 
-    self.lower_right = None                         # cell below right
-    self.lower_left = None                          # cell below left
+    self.bottom_right = None                         # cell below right
+    self.bottom_left = None                          # cell below left
 
     self.left = None                                # cell left
     self.right = None                               # cell right
@@ -297,7 +301,7 @@ class hex:
     brd = self.border
 
     # Calculate Corner Points
-    if self.orientation == HORIZONTAL:
+    if self.orientation == ORIENTATIONS.HORIZONTAL:
 
       # Offsets
       oX = self.inradius # Offset x
@@ -382,13 +386,14 @@ class hex:
     pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)
     pygame.gfxdraw.filled_circle(WIN, self._x, self._y, int(app.cell_size*0.25), self.center_color)
 
-    if app.current_cell == self: pygame.draw.polygon(WIN, WHITE, self.border, width=3)
-
     if self.active == False:
 
       self.color = VASARELY_COLORS.TRANSPARENT.value
       pygame.draw.polygon(WIN, VASARELY_COLORS.GRAY.value, self.points, width=1)
       
+    else:
+
+      if app.focus_cell == self: pygame.draw.polygon(WIN, WHITE, self.border, width=3)
 
     if self.hit:
 
@@ -400,9 +405,9 @@ class hex:
 
       # text = HEALTH_FONT.render(str(self.row) + ', ' + str(self.col), True, WHITE)
 
-      # if self.lower_left != None:
+      # if self.bottom_left != None:
 
-      #   text = HEALTH_FONT.render(str(self.lower_left.id), True, WHITE)
+      #   text = HEALTH_FONT.render(str(self.bottom_left.id), True, WHITE)
       #   text_rect = text.get_rect(center=(self._x, self._y))
       #   WIN.blit(text, text_rect)
 
@@ -415,11 +420,11 @@ class hex:
       # if self.top != None:          pygame.draw.line(WIN, RED, (self._x, self._y), (self.top._x, self.top._y), width=5)
       # if self.bottom != None:       pygame.draw.line(WIN, GREEN, (self._x, self._y), (self.bottom._x, self.bottom._y), width=5)
       
-      # if self.upper_left != None:   pygame.draw.line(WIN, YELLOW, (self._x, self._y), (self.upper_left._x, self.upper_left._y), width=5)
-      # if self.upper_right != None:  pygame.draw.line(WIN, BLUE, (self._x, self._y), (self.upper_right._x, self.upper_right._y), width=5)
+      # if self.top_left != None:   pygame.draw.line(WIN, YELLOW, (self._x, self._y), (self.top_left._x, self.top_left._y), width=5)
+      # if self.top_right != None:  pygame.draw.line(WIN, BLUE, (self._x, self._y), (self.top_right._x, self.top_right._y), width=5)
       
-      # if self.lower_left != None:   pygame.draw.line(WIN, BLACK, (self._x, self._y), (self.lower_left._x, self.lower_left._y), width=5)
-      # if self.lower_right != None:  pygame.draw.line(WIN, WHITE, (self._x, self._y), (self.lower_right._x, self.lower_right._y), width=5)
+      # if self.bottom_left != None:   pygame.draw.line(WIN, BLACK, (self._x, self._y), (self.bottom_left._x, self.bottom_left._y), width=5)
+      # if self.bottom_right != None:  pygame.draw.line(WIN, WHITE, (self._x, self._y), (self.bottom_right._x, self.bottom_right._y), width=5)
 
       # draw_text()
 
@@ -434,16 +439,16 @@ class hex:
       # WIN.blit(WINNER_FONT.render('4', 1, WHITE), (self.points[4][X], self.points[4][Y]))
       # WIN.blit(WINNER_FONT.render('5', 1, WHITE), (self.points[5][X], self.points[5][Y]))
 
-  # def draw_links(self):
+  def draw_links(self):
 
-    # if self.top != None:          pygame.draw.line(WIN, RED, (self._x, self._y), (self.top._x, self.top._y), width=5)
-    # if self.bottom != None:       pygame.draw.line(WIN, GREEN, (self._x, self._y), (self.bottom._x, self.bottom._y), width=5)
+    if self.top != None:          pygame.draw.line(WIN, RED, (self._x, self._y), (self.top._x, self.top._y), width=5)
+    if self.bottom != None:       pygame.draw.line(WIN, GREEN, (self._x, self._y), (self.bottom._x, self.bottom._y), width=5)
     
-    # if self.upper_left != None:   pygame.draw.line(WIN, YELLOW, (self._x, self._y), (self.upper_left._x, self.upper_left._y), width=5)
-    # if self.upper_right != None:  pygame.draw.line(WIN, BLUE, (self._x, self._y), (self.upper_right._x, self.upper_right._y), width=5)
+    if self.top_left != None:   pygame.draw.line(WIN, YELLOW, (self._x, self._y), (self.top_left._x, self.top_left._y), width=5)
+    if self.top_right != None:  pygame.draw.line(WIN, BLUE, (self._x, self._y), (self.top_right._x, self.top_right._y), width=5)
     
-    # if self.lower_left != None:   pygame.draw.line(WIN, BLACK, (self._x, self._y), (self.lower_left._x, self.lower_left._y), width=5)
-    # if self.lower_right != None:  pygame.draw.line(WIN, WHITE, (self._x, self._y), (self.lower_right._x, self.lower_right._y), width=5)
+    if self.bottom_left != None:   pygame.draw.line(WIN, BLACK, (self._x, self._y), (self.bottom_left._x, self.bottom_left._y), width=5)
+    if self.bottom_right != None:  pygame.draw.line(WIN, WHITE, (self._x, self._y), (self.bottom_right._x, self.bottom_right._y), width=5)
 
   def hitTest(self):
     
@@ -559,13 +564,555 @@ class hex:
 
       if self.active:
         
-        app.current_cell = self
+        app.focus_cell = self
 
       # p(self.id)
-      if self.center_color == self.color:
+      # if self.center_color == self.color:
 
-        self.color        = VASARELY_COLORS.TRANSPARENT.value
-        self.center_color = VASARELY_COLORS.TRANSPARENT.value
+      #   self.color        = VASARELY_COLORS.TRANSPARENT.value
+      #   self.center_color = VASARELY_COLORS.TRANSPARENT.value
+
+class grid:
+
+  id = 0
+  orientation = ORIENTATIONS.VERTICAL
+  area = 0
+  perimeter = 0
+  side_length = 0
+  tri_area = 0
+
+  def __init__(self, x, y) -> None:
+
+    self._x = int(x)                                # horizontal position of centre
+    self._y = int(y)                                # vertical position of centre
+    
+    self.orientation = ORIENTATIONS.VERTICAL
+
+    self.cells = []
+
+    self.focus_cell = None
+    self.size = None
+    self.cell_size = None
+
+  def draw(self):
+    
+    for row in self.cells:
+      for cell in row:
+        cell.draw()
+
+    if DEBUG: self.focus_cell.draw_links()
+
+  def load(self):               
+    
+    def load_grid_horizontal():
+
+      p('Horizontal')
+
+      radius = app.cell_size*1/math.cos(math.pi/6)
+      limit = app.grid_size
+      inRadius = radius*math.cos(math.pi/6)
+
+      for row in range(limit):
+        
+        temp = []
+
+        for col in range(limit):
+        
+          colPos = 2.5 * radius/2 + (0.75 * radius) * col
+
+          if col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
+          else:          rowPos = inRadius * 0.75 + row * inRadius
+
+          h = hex(colPos, rowPos, radius, get_Color())
+
+          h.col = col
+          h.row = row
+
+          temp.append(h)
+
+        app.grid.append(temp)
+
+    def load_grid_vertical():
+    
+      p('VERTICAL')
+
+      radius = app.cell_size*1/math.cos(math.pi/6)
+      limit = app.grid_size
+      inRadius = radius*math.cos(math.pi/6)
+
+      for row in range(limit):
+        
+        temp = []
+
+        for col in range(limit):
+        
+          x = 2.5 * radius/2 + (0.75 * radius) * col
+
+          if col%2 == 0: y = inRadius * 0.75 + row * inRadius + inRadius/2
+          else:          y = inRadius * 0.75 + row * inRadius
+
+          h = hex(x, y, radius, get_Color())
+
+          h.col = col
+          h.row = row
+
+          # if row == 0 and col == 0: h.active = False
+
+          temp.append(h)
+
+        app.grid.append(temp)
+
+    if   app.orientation == ORIENTATIONS.HORIZONTAL: load_grid_horizontal()
+    elif app.orientation == ORIENTATIONS.VERTICAL:   load_grid_vertical()
+
+  def shuffle(self):
+    
+    def get_cell():
+    
+      length = len(app.grid)
+
+      return app.grid[int(random.random()*length)] \
+                    [int(random.random()*length)]
+
+    for rowIndex, row in enumerate(app.grid):
+      for colIndex, col in enumerate(row):
+        
+        cell = app.grid[rowIndex][colIndex]
+        temp = cell.center_color
+
+        random_cell = get_cell()
+
+        while (cell.center_color == random_cell.color) or \
+              (cell.color == random_cell.center_color):
+        
+          random_cell = get_cell()
+
+        cell.center_color = random_cell.center_color
+        random_cell.center_color = temp
+
+  def connect(self):
+    
+    def get_top_left(hex):
+      
+      temp = hex
+
+      while temp.bottom_right is not None:
+
+        temp = temp.bottom_right
+
+      return temp
+
+    def get_top_right(hex):
+      
+      temp = hex
+
+      while temp.bottom_left is not None:
+
+        temp = temp.bottom_left
+
+      return temp
+
+    def get_bottom_left(hex):
+      
+      temp = hex
+
+      while temp.top_right is not None:
+
+        # p(temp.id)
+        temp = temp.top_right
+
+        if temp.top_right.id == hex.id:
+
+          break
+
+      return temp
+
+    def get_bottom_right(hex):
+      
+      temp = hex
+
+      while temp.top_left is not None:
+
+        temp = temp.top_left
+
+        if temp.top_left.id == hex.id:
+
+          break
+
+      return temp
+
+    # try:
+
+    g = app.grid
+    sz = len(g)-1
+
+    for rowIndex, row in enumerate(g):
+      for colIndex, cell in enumerate(row):
+
+        even_Col = colIndex%2==0
+
+        # Top 
+        if rowIndex == 0:                  cell.top = g[sz        ][colIndex]
+        else:                              cell.top = g[rowIndex-1][colIndex]
+
+        # Bottom
+        if rowIndex == len(g)-1:           cell.bottom = g[0         ][colIndex]
+        else:                              cell.bottom = g[rowIndex+1][colIndex]
+
+        # Upper Left
+        if(colIndex == 0):
+
+          cell.top_left = None
+
+        else:
+
+          if(rowIndex==0):
+            
+            if(even_Col):  cell.top_left = g[rowIndex  ][colIndex-1]
+            else:          cell.top_left = None
+
+          else:             
+            
+            if(even_Col):  cell.top_left = g[rowIndex  ][colIndex-1]              
+            else:          cell.top_left = g[rowIndex-1][colIndex-1]
+            
+
+        # Upper Right
+        if(colIndex == sz):
+          
+          cell.top_right = None
+        
+        else:
+          
+          if(rowIndex == 0):
+
+            if(even_Col):  cell.top_right = g[rowIndex][colIndex+1]
+            else:          cell.top_right = None
+
+          else:
+
+            if(even_Col):  cell.top_right = g[rowIndex  ][colIndex+1]
+            else:          cell.top_right = g[rowIndex-1][colIndex+1]
+
+        # Lower Left
+        if(colIndex == 0):
+
+          cell.bottom_left = None
+        
+        else:
+
+          if(rowIndex==sz):
+            
+            if(even_Col):  cell.bottom_left = None
+            else:          cell.bottom_left = g[rowIndex][colIndex-1]
+
+          else:             
+            
+            if(even_Col):  cell.bottom_left = g[rowIndex+1][colIndex-1]
+            else:          cell.bottom_left = g[rowIndex][colIndex-1]
+
+        # Lower Right
+        if(colIndex == sz):
+          
+          cell.bottom_right = None
+        
+        else:
+          
+          if(rowIndex==sz):
+
+            if(even_Col):  cell.bottom_right = None
+            else:          cell.bottom_right = g[rowIndex][colIndex+1]
+
+          else:
+
+            if(even_Col):  cell.bottom_right = g[rowIndex+1][colIndex+1]
+            else:          cell.bottom_right = g[rowIndex  ][colIndex+1]
+
+    # Get Upper Left
+    for rowIndex, row in enumerate(g):
+      for colIndex, cell in enumerate(row):
+        
+        if g[rowIndex][colIndex].top_left is None:
+          
+          g[rowIndex][colIndex].top_left = get_top_left(g[rowIndex][colIndex])
+    
+    # Get Upper Right
+    for rowIndex, row in enumerate(g):
+      for colIndex, cell in enumerate(row):
+        
+        if g[rowIndex][colIndex].top_right is None:
+          
+          g[rowIndex][colIndex].top_right = get_top_right(g[rowIndex][colIndex])
+
+    # Get Lower Left
+    for rowIndex, row in enumerate(g):
+      for colIndex, cell in enumerate(row):
+        
+        cell = g[rowIndex][colIndex]
+
+        if cell.bottom_left is None:
+
+          cell.bottom_left = get_bottom_left(cell)
+
+    # Get Lower Right
+    for rowIndex, row in enumerate(g):
+      for colIndex, cell in enumerate(row):
+        
+        if g[rowIndex][colIndex].bottom_right is None:
+          
+          g[rowIndex][colIndex].bottom_right = get_bottom_right(g[rowIndex][colIndex])
+
+    # except:
+
+    #   p('ERROR LOADING UP / DOWN ' + str(row) + ', ' + str(col))
+
+    x = 1
+    assert x > 0, 'Only positive numbers are allowed'
+    # print('x is a positive number.')
+
+  def toggle_orientation(self):
+    
+    if self.orientation == ORIENTATIONS.HORIZONTAL:
+    
+      self.orientation = ORIENTATIONS.VERTICAL
+      hex.orientation = ORIENTATIONS.VERTICAL
+    
+    else:                 
+      
+      self.orientation = ORIENTATIONS.HORIZONTAL
+      hex.orientation = ORIENTATIONS.HORIZONTAL
+      
+    self.cells.clear()
+
+    self.load()
+    self.connect()  # Load cell adjacentcy (above/below etc)
+    self.shuffle()
+    
+
+  def reset(self):
+    
+    hex.id =  0
+    hex.area = 0
+
+    self.moves = 0
+    self.cells.clear()
+
+    self.load_grid()     # Load the grid... duh
+    self.connect_grid()  # Load cell adjacentcy (above/below etc)
+    self.shuffle_grid()  # Scramble the inner circles
+
+    self.set_focus()
+    
+  def increment(self):
+    
+    self.size += 2
+    self.cell_size = math.floor(WIDTH/(self.size+1))
+
+    self.reset()
+
+    self.focus_cell = self.cells[0][0]
+    
+  def decrement(self):
+    
+    if self.size>4:
+
+      self.size -= 2  
+      self.cell_size = math.floor(WIDTH/(self.size+1))
+
+      self.reset()
+      
+  def check_cells(self):
+    
+    def reconnect_cell(cell):
+
+      cell.top.bottom = cell.bottom
+      cell.bottom.top = cell.top
+      cell.top_left.bottom_right = cell.bottom_right
+      cell.top_right.bottom_left = cell.bottom_left
+      cell.bottom_left.top_right = cell.top_right
+      cell.bottom_right.top_left = cell.top_left
+
+    for row in self.cells:
+      for cell in row:
+
+        if cell.color == cell.center_color:
+          cell.color        = VASARELY_COLORS.TRANSPARENT.value
+          cell.center_color = VASARELY_COLORS.TRANSPARENT.value
+          cell.active = False
+
+          reconnect_cell(cell)
+          
+  def check_game(self):
+    
+    for row in self.cells:
+      for col in row:
+        if(col.top == col and
+          col.bottom == col and
+          col.top_left == col and
+          col.top_right == col and
+          col.bottom_left == col and
+          col.bottom_right == col):
+          p('GAME OVER')
+          break
+
+    
+  def move_focus(self, direction):
+
+    if   direction == DIRECTIONS.UP:
+      if self.focus_cell.top is not None: self.focus_cell = self.focus_cell.top 
+
+    elif direction == DIRECTIONS.DOWN:    
+      if self.focus_cell.bottom is not None: self.focus_cell = self.focus_cell.bottom 
+
+    elif direction == DIRECTIONS.UP_LEFT:
+      if self.focus_cell.top_left is not None: self.focus_cell = self.focus_cell.top_left
+
+    elif direction == DIRECTIONS.UP_RIGHT:
+      if self.focus_cell.top_right is not None: self.focus_cell = self.focus_cell.top_right
+
+    elif direction == DIRECTIONS.DOWN_LEFT:
+      if self.focus_cell.bottom_left is not None: self.focus_cell = self.focus_cell.bottom_left
+
+    elif direction == DIRECTIONS.DOWN_RIGHT:
+      if self.focus_cell.bottom_right is not None: self.focus_cell = self.focus_cell.bottom_right
+
+  def move(self, direction):
+
+    def get_first_active(col) -> hex:
+
+      for row_index, row in enumerate(app.grid):
+
+        if row[col].active:
+
+          return row[col]
+
+    def get_last_active(col) -> hex:
+
+      last_active = 0
+
+      for row_index, row in enumerate(app.grid):
+
+        if row[col].active:
+
+          last_active = row[col]
+
+      return last_active
+
+    def up():
+
+      g = app.grid
+      col = app.focus_cell.col
+
+      temp_color = get_first_active(col).center_color
+      last_active = get_last_active(col)
+
+      for row_index, row in enumerate(g):
+        
+        cell = row[col]
+
+        if cell.active:
+
+          if cell == last_active: cell.center_color = temp_color
+          else:                   cell.center_color = cell.bottom.center_color
+
+    def down():
+
+      g = app.grid
+      col = app.focus_cell.col
+      length = len(g)
+      
+      temp_color = get_last_active(col).center_color
+      first_active = get_first_active(col)
+
+      for row in reversed(range(length)):
+        
+        cell = g[row][col]
+
+        if cell.active:
+
+          if cell == first_active: cell.center_color = temp_color
+          else:                    cell.center_color = cell.top.center_color
+
+    def up_left():
+
+      temp_color = app.focus_cell.bottom_right.center_color
+      hex = app.focus_cell.bottom_right
+
+      while hex.id != app.focus_cell.id:
+
+        hex.center_color = hex.bottom_right.center_color
+
+        hex = hex.bottom_right
+
+      hex.center_color = temp_color
+
+    def up_right():
+      
+      temp_color = app.focus_cell.bottom_left.center_color
+      hex = app.focus_cell.bottom_left
+
+      while hex.id != app.focus_cell.id:
+
+        hex.center_color = hex.bottom_left.center_color
+
+        hex = hex.bottom_left
+
+      hex.center_color = temp_color
+
+    def down_left():
+
+      temp_color = app.focus_cell.top_right.center_color
+      hex = app.focus_cell.top_right
+
+      while hex.id != app.focus_cell.id:
+
+        hex.center_color = hex.top_right.center_color
+
+        hex = hex.top_right
+
+      hex.center_color = temp_color
+
+    def down_right():
+
+      temp_color = app.focus_cell.top_left.center_color
+      hex = app.focus_cell.top_left
+
+      while hex.id != app.focus_cell.id:
+
+        hex.center_color = hex.top_left.center_color
+
+        hex = hex.top_left
+
+      hex.center_color = temp_color
+
+    # def right(): p('right() placeholder')
+    # def left():  p('left() placeholder')
+
+    if   direction == DIRECTIONS.UP:         up()
+    elif direction == DIRECTIONS.DOWN:       down()
+    elif direction == DIRECTIONS.UP_LEFT:    up_left()
+    elif direction == DIRECTIONS.UP_RIGHT:   up_right()
+    elif direction == DIRECTIONS.DOWN_LEFT:  down_left()
+    elif direction == DIRECTIONS.DOWN_RIGHT: down_right()
+
+    self.check_cells()
+    increment_moves()
+    check_game()
+  
+  def increment_moves(self):
+    
+    app.moves+=1
+
+  def set_focus(self):          
+    
+    for rowIndex, row in enumerate(self.cells):
+      for colIndex, col in enumerate(row):
+      
+        # p(col.active)
+        if col.active: 
+
+          self.focus_cell = col
+          return
 
 #endregion - Objects ----------------------------------------------------------
 
@@ -577,66 +1124,66 @@ app.cell_size = HEIGHT/(app.grid_size+1)
 
 def load_grid():
 
-  if   app.orientation == HORIZONTAL: load_grid_horizontal()
-  elif app.orientation == VERTICAL:   load_grid_vertical()
+  def load_grid_horizontal():
 
-def load_grid_horizontal():
+    p('Horizontal')
 
-  p('Horizontal')
+    radius = app.cell_size*1/math.cos(math.pi/6)
+    limit = app.grid_size
+    inRadius = radius*math.cos(math.pi/6)
 
-  radius = app.cell_size*1/math.cos(math.pi/6)
-  limit = app.grid_size
-  inRadius = radius*math.cos(math.pi/6)
+    for row in range(limit):
+      
+      temp = []
 
-  for row in range(limit):
-    
-    temp = []
+      for col in range(limit):
+      
+        colPos = 2.5 * radius/2 + (0.75 * radius) * col
 
-    for col in range(limit):
-    
-      colPos = 2.5 * radius/2 + (0.75 * radius) * col
+        if col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
+        else:          rowPos = inRadius * 0.75 + row * inRadius
 
-      if col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
-      else:          rowPos = inRadius * 0.75 + row * inRadius
+        h = hex(colPos, rowPos, radius, get_Color())
 
-      h = hex(colPos, rowPos, radius, get_Color())
+        h.col = col
+        h.row = row
 
-      h.col = col
-      h.row = row
+        temp.append(h)
 
-      temp.append(h)
+      app.grid.append(temp)
 
-    app.grid.append(temp)
+  def load_grid_vertical():
+  
+    p('VERTICAL')
 
-def load_grid_vertical():
- 
-  p('VERTICAL')
+    radius = app.cell_size*1/math.cos(math.pi/6)
+    limit = app.grid_size
+    inRadius = radius*math.cos(math.pi/6)
 
-  radius = app.cell_size*1/math.cos(math.pi/6)
-  limit = app.grid_size
-  inRadius = radius*math.cos(math.pi/6)
+    for row in range(limit):
+      
+      temp = []
 
-  for row in range(limit):
-    
-    temp = []
+      for col in range(limit):
+      
+        x = 2.5 * radius/2 + (0.75 * radius) * col
 
-    for col in range(limit):
-    
-      x = 2.5 * radius/2 + (0.75 * radius) * col
+        if col%2 == 0: y = inRadius * 0.75 + row * inRadius + inRadius/2
+        else:          y = inRadius * 0.75 + row * inRadius
 
-      if col%2 == 0: y = inRadius * 0.75 + row * inRadius + inRadius/2
-      else:          y = inRadius * 0.75 + row * inRadius
+        h = hex(x, y, radius, get_Color())
 
-      h = hex(x, y, radius, get_Color())
+        h.col = col
+        h.row = row
 
-      h.col = col
-      h.row = row
+        # if row == 0 and col == 0: h.active = False
 
-      # if row == 0 and col == 0: h.active = False
+        temp.append(h)
 
-      temp.append(h)
+      app.grid.append(temp)
 
-    app.grid.append(temp)
+  if   app.orientation == ORIENTATIONS.HORIZONTAL: load_grid_horizontal()
+  elif app.orientation == ORIENTATIONS.VERTICAL:   load_grid_vertical()
 
 def shuffle_grid():
 
@@ -665,50 +1212,50 @@ def shuffle_grid():
 
 def connect_grid():
 
-  def get_upper_left(hex):
+  def get_top_left(hex):
     
     temp = hex
 
-    while temp.lower_right is not None:
+    while temp.bottom_right is not None:
 
-      temp = temp.lower_right
+      temp = temp.bottom_right
 
     return temp
 
-  def get_upper_right(hex):
+  def get_top_right(hex):
     
     temp = hex
 
-    while temp.lower_left is not None:
+    while temp.bottom_left is not None:
 
-      temp = temp.lower_left
+      temp = temp.bottom_left
 
     return temp
 
-  def get_lower_left(hex):
+  def get_bottom_left(hex):
     
     temp = hex
 
-    while temp.upper_right is not None:
+    while temp.top_right is not None:
 
       # p(temp.id)
-      temp = temp.upper_right
+      temp = temp.top_right
 
-      if temp.upper_right.id == hex.id:
+      if temp.top_right.id == hex.id:
 
         break
 
     return temp
 
-  def get_lower_right(hex):
+  def get_bottom_right(hex):
     
     temp = hex
 
-    while temp.upper_left is not None:
+    while temp.top_left is not None:
 
-      temp = temp.upper_left
+      temp = temp.top_left
 
-      if temp.upper_left.id == hex.id:
+      if temp.top_left.id == hex.id:
 
         break
 
@@ -735,87 +1282,87 @@ def connect_grid():
       # Upper Left
       if(colIndex == 0):
 
-        cell.upper_left = None
+        cell.top_left = None
 
       else:
 
         if(rowIndex==0):
           
-          if(even_Col):  cell.upper_left = g[rowIndex  ][colIndex-1]
-          else:          cell.upper_left = None
+          if(even_Col):  cell.top_left = g[rowIndex  ][colIndex-1]
+          else:          cell.top_left = None
 
         else:             
           
-          if(even_Col):  cell.upper_left = g[rowIndex  ][colIndex-1]              
-          else:          cell.upper_left = g[rowIndex-1][colIndex-1]
+          if(even_Col):  cell.top_left = g[rowIndex  ][colIndex-1]              
+          else:          cell.top_left = g[rowIndex-1][colIndex-1]
           
 
       # Upper Right
       if(colIndex == sz):
         
-        cell.upper_right = None
+        cell.top_right = None
       
       else:
         
         if(rowIndex == 0):
 
-          if(even_Col):  cell.upper_right = g[rowIndex][colIndex+1]
-          else:          cell.upper_right = None
+          if(even_Col):  cell.top_right = g[rowIndex][colIndex+1]
+          else:          cell.top_right = None
 
         else:
 
-          if(even_Col):  cell.upper_right = g[rowIndex  ][colIndex+1]
-          else:          cell.upper_right = g[rowIndex-1][colIndex+1]
+          if(even_Col):  cell.top_right = g[rowIndex  ][colIndex+1]
+          else:          cell.top_right = g[rowIndex-1][colIndex+1]
 
       # Lower Left
       if(colIndex == 0):
 
-        cell.lower_left = None
+        cell.bottom_left = None
       
       else:
 
         if(rowIndex==sz):
           
-          if(even_Col):  cell.lower_left = None
-          else:          cell.lower_left = g[rowIndex][colIndex-1]
+          if(even_Col):  cell.bottom_left = None
+          else:          cell.bottom_left = g[rowIndex][colIndex-1]
 
         else:             
           
-          if(even_Col):  cell.lower_left = g[rowIndex+1][colIndex-1]
-          else:          cell.lower_left = g[rowIndex][colIndex-1]
+          if(even_Col):  cell.bottom_left = g[rowIndex+1][colIndex-1]
+          else:          cell.bottom_left = g[rowIndex][colIndex-1]
 
       # Lower Right
       if(colIndex == sz):
         
-        cell.lower_right = None
+        cell.bottom_right = None
       
       else:
         
         if(rowIndex==sz):
 
-          if(even_Col):  cell.lower_right = None
-          else:          cell.lower_right = g[rowIndex][colIndex+1]
+          if(even_Col):  cell.bottom_right = None
+          else:          cell.bottom_right = g[rowIndex][colIndex+1]
 
         else:
 
-          if(even_Col):  cell.lower_right = g[rowIndex+1][colIndex+1]
-          else:          cell.lower_right = g[rowIndex  ][colIndex+1]
+          if(even_Col):  cell.bottom_right = g[rowIndex+1][colIndex+1]
+          else:          cell.bottom_right = g[rowIndex  ][colIndex+1]
 
   # Get Upper Left
   for rowIndex, row in enumerate(g):
     for colIndex, cell in enumerate(row):
       
-      if g[rowIndex][colIndex].upper_left is None:
+      if g[rowIndex][colIndex].top_left is None:
         
-        g[rowIndex][colIndex].upper_left = get_upper_left(g[rowIndex][colIndex])
+        g[rowIndex][colIndex].top_left = get_top_left(g[rowIndex][colIndex])
   
   # Get Upper Right
   for rowIndex, row in enumerate(g):
     for colIndex, cell in enumerate(row):
       
-      if g[rowIndex][colIndex].upper_right is None:
+      if g[rowIndex][colIndex].top_right is None:
         
-        g[rowIndex][colIndex].upper_right = get_upper_right(g[rowIndex][colIndex])
+        g[rowIndex][colIndex].top_right = get_top_right(g[rowIndex][colIndex])
 
   # Get Lower Left
   for rowIndex, row in enumerate(g):
@@ -823,17 +1370,17 @@ def connect_grid():
        
       cell = g[rowIndex][colIndex]
 
-      if cell.lower_left is None:
+      if cell.bottom_left is None:
 
-        cell.lower_left = get_lower_left(cell)
+        cell.bottom_left = get_bottom_left(cell)
 
   # Get Lower Right
   for rowIndex, row in enumerate(g):
     for colIndex, cell in enumerate(row):
       
-      if g[rowIndex][colIndex].lower_right is None:
+      if g[rowIndex][colIndex].bottom_right is None:
         
-        g[rowIndex][colIndex].lower_right = get_lower_right(g[rowIndex][colIndex])
+        g[rowIndex][colIndex].bottom_right = get_bottom_right(g[rowIndex][colIndex])
 
   # except:
 
@@ -847,29 +1394,13 @@ def connect_grid():
 
 #region - Commands ============================================================
 
-def get_count() -> int:
-
-  try:
-
-    count=0 
-
-    for row in app.grid:
-      for col in row:
-        count+=1
-
-    return count
-  
-  except:
-
-    Mbox('Exception - Hexy.py', 'get_count() - ' + Exception.__name__, 1)
-
 def draw_board():
     
   for row in app.grid:
     for cell in row:
       cell.draw()
 
-  # if DEBUG: app.current_cell.draw_links()
+  if DEBUG: app.focus_cell.draw_links()
 
 def draw_window():
 
@@ -883,10 +1414,10 @@ def draw_window():
 
     # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
 
-    if app.current_cell is not None:
-      WIN.blit(WINNER_FONT.render(str(app.current_cell.row), 1, WHITE), (20, 20))
+    if app.focus_cell is not None:
+      WIN.blit(WINNER_FONT.render(str(app.focus_cell.row), 1, WHITE), (20, 20))
       WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
-      WIN.blit(WINNER_FONT.render('Current Cell: ' + str(app.current_cell.id), 1, WHITE), (800, 20))
+      WIN.blit(WINNER_FONT.render('Current Cell: ' + str(app.focus_cell.id), 1, WHITE), (800, 20))
 
     pygame.display.update()
 
@@ -894,121 +1425,127 @@ def draw_window():
 
   #   Mbox('Exception - Hexy.py', 'draw_window() - ' + Exception.__name__, 1)
 
-def increment_moves(): app.moves+=1
+def increment_moves():
+  
+  app.moves+=1
 
-def set_current_cell():
+def set_focus():
 
   for rowIndex, row in enumerate(app.grid):
     for colIndex, col in enumerate(row):
       
-      p(col.active)
+      # p(col.active)
       if col.active: 
 
-        app.current_cell = col
+        app.focus_cell = col
         return
         
 def move(direction):
 
-  def get_first_active(col) -> int:
+  def get_first_active(col) -> hex:
 
-    for rowIndex, row in enumerate(app.grid):
+    for row_index, row in enumerate(app.grid):
 
       if row[col].active:
 
-        return rowIndex
+        return row[col]
 
-  def get_last_active(col) -> int:
+  def get_last_active(col) -> hex:
 
     last_active = 0
 
-    for rowIndex, row in enumerate(app.grid):
+    for row_index, row in enumerate(app.grid):
 
       if row[col].active:
 
-        last_active = rowIndex
+        last_active = row[col]
 
     return last_active
 
   def up():
 
     g = app.grid
-    col = app.current_cell.col
+    col = app.focus_cell.col
 
-    temp_color = g[get_first_active(col)][col].center_color
+    temp_color = get_first_active(col).center_color
     last_active = get_last_active(col)
 
-    for rowIndex, row in enumerate(g):
+    for row_index, row in enumerate(g):
       
-      if row[col].active:
+      cell = row[col]
 
-        if rowIndex == last_active: row[col].center_color = temp_color
-        else:                       row[col].center_color = row[col].bottom.center_color
+      if cell.active:
+
+        if cell == last_active: cell.center_color = temp_color
+        else:                   cell.center_color = cell.bottom.center_color
 
   def down():
 
     g = app.grid
-    col = app.current_cell.col
+    col = app.focus_cell.col
     length = len(g)
     
-    temp_color = g[get_last_active(col)][col].center_color
+    temp_color = get_last_active(col).center_color
     first_active = get_first_active(col)
 
     for row in reversed(range(length)):
       
-      if g[row][col].active:
+      cell = g[row][col]
 
-        if row == first_active: g[row][col].center_color = temp_color
-        else:                   g[row][col].center_color = g[row][col].top.center_color
+      if cell.active:
+
+        if cell == first_active: cell.center_color = temp_color
+        else:                    cell.center_color = cell.top.center_color
 
   def up_left():
 
-    temp_color = app.current_cell.lower_right.center_color
-    hex = app.current_cell.lower_right
+    temp_color = app.focus_cell.bottom_right.center_color
+    hex = app.focus_cell.bottom_right
 
-    while hex.id != app.current_cell.id:
+    while hex.id != app.focus_cell.id:
 
-      hex.center_color = hex.lower_right.center_color
+      hex.center_color = hex.bottom_right.center_color
 
-      hex = hex.lower_right
+      hex = hex.bottom_right
 
     hex.center_color = temp_color
 
   def up_right():
     
-    temp_color = app.current_cell.lower_left.center_color
-    hex = app.current_cell.lower_left
+    temp_color = app.focus_cell.bottom_left.center_color
+    hex = app.focus_cell.bottom_left
 
-    while hex.id != app.current_cell.id:
+    while hex.id != app.focus_cell.id:
 
-      hex.center_color = hex.lower_left.center_color
+      hex.center_color = hex.bottom_left.center_color
 
-      hex = hex.lower_left
+      hex = hex.bottom_left
 
     hex.center_color = temp_color
 
   def down_left():
 
-    temp_color = app.current_cell.upper_right.center_color
-    hex = app.current_cell.upper_right
+    temp_color = app.focus_cell.top_right.center_color
+    hex = app.focus_cell.top_right
 
-    while hex.id != app.current_cell.id:
+    while hex.id != app.focus_cell.id:
 
-      hex.center_color = hex.upper_right.center_color
+      hex.center_color = hex.top_right.center_color
 
-      hex = hex.upper_right
+      hex = hex.top_right
 
     hex.center_color = temp_color
 
   def down_right():
 
-    temp_color = app.current_cell.upper_left.center_color
-    hex = app.current_cell.upper_left
+    temp_color = app.focus_cell.top_left.center_color
+    hex = app.focus_cell.top_left
 
-    while hex.id != app.current_cell.id:
+    while hex.id != app.focus_cell.id:
 
-      hex.center_color = hex.upper_left.center_color
+      hex.center_color = hex.top_left.center_color
 
-      hex = hex.upper_left
+      hex = hex.top_left
 
     hex.center_color = temp_color
 
@@ -1022,22 +1559,23 @@ def move(direction):
   elif direction == DIRECTIONS.DOWN_LEFT:  down_left()
   elif direction == DIRECTIONS.DOWN_RIGHT: down_right()
 
+  check_cells()
   increment_moves()
+  check_game()
 
 def toggle_orientation():
 
-  if app.orientation == HORIZONTAL:
+  if app.orientation == ORIENTATIONS.HORIZONTAL:
     
-    app.orientation = VERTICAL
-    hex.orientation = VERTICAL
+    app.orientation = ORIENTATIONS.VERTICAL
+    hex.orientation = ORIENTATIONS.VERTICAL
   
   else:                 
     
-    app.orientation = HORIZONTAL
-    hex.orientation = HORIZONTAL
+    app.orientation = ORIENTATIONS.HORIZONTAL
+    hex.orientation = ORIENTATIONS.HORIZONTAL
     
   app.grid.clear()
-  app.swap.clear()
 
   load_grid()
   connect_grid()  # Load cell adjacentcy (above/below etc)
@@ -1055,6 +1593,8 @@ def reset_grid():
   connect_grid()  # Load cell adjacentcy (above/below etc)
   shuffle_grid()  # Scramble the inner circles
 
+  set_focus()
+
 def increment_grid():
 
   app.grid_size += 2
@@ -1062,7 +1602,7 @@ def increment_grid():
 
   reset_grid()
 
-  app.current_cell = app.grid[0][0]
+  app.focus_cell = app.grid[0][0]
 
 def decrement_grid(): 
 
@@ -1075,44 +1615,57 @@ def decrement_grid():
 
 def check_cells():
 
-  def reconnect_cell(hex):
+  def reconnect_cell(cell):
 
-    hex.top.bottom = hex.bottom
-    hex.bottom.top = hex.top
-    # hex.upper_left.lower_right = hex.lower_right
-    # hex.upper_right.lower_left = hex.lower_left
-    # hex.lower_left.upper_right = hex.upper_right
-    # hex.lower_right.upper_left = hex.upper_left
+    cell.top.bottom = cell.bottom
+    cell.bottom.top = cell.top
+    cell.top_left.bottom_right = cell.bottom_right
+    cell.top_right.bottom_left = cell.bottom_left
+    cell.bottom_left.top_right = cell.top_right
+    cell.bottom_right.top_left = cell.top_left
 
   for row in app.grid:
     for cell in row:
 
-        if cell.color == cell.center_color:
-          cell.color        = VASARELY_COLORS.TRANSPARENT.value
-          cell.center_color = VASARELY_COLORS.TRANSPARENT.value
-          cell.active = False
+      if cell.color == cell.center_color:
+        cell.color        = VASARELY_COLORS.TRANSPARENT.value
+        cell.center_color = VASARELY_COLORS.TRANSPARENT.value
+        cell.active = False
 
-          reconnect_cell(cell)
+        reconnect_cell(cell)
 
-def current_cell_move(direction):
+def check_game():
+
+  for row in app.grid:
+    for col in row:
+      if(col.top == col and
+         col.bottom == col and
+         col.top_left == col and
+         col.top_right == col and
+         col.bottom_left == col and
+         col.bottom_right == col):
+        p('GAME OVER')
+        break
+
+def move_focus(direction):
 
   if   direction == DIRECTIONS.UP:
-    if app.current_cell.top is not None: app.current_cell = app.current_cell.top 
+    if app.focus_cell.top is not None: app.focus_cell = app.focus_cell.top 
 
   elif direction == DIRECTIONS.DOWN:    
-    if app.current_cell.bottom is not None: app.current_cell = app.current_cell.bottom 
+    if app.focus_cell.bottom is not None: app.focus_cell = app.focus_cell.bottom 
 
   elif direction == DIRECTIONS.UP_LEFT:
-    if app.current_cell.upper_left is not None: app.current_cell = app.current_cell.upper_left
+    if app.focus_cell.top_left is not None: app.focus_cell = app.focus_cell.top_left
 
   elif direction == DIRECTIONS.UP_RIGHT:
-    if app.current_cell.upper_right is not None: app.current_cell = app.current_cell.upper_right
+    if app.focus_cell.top_right is not None: app.focus_cell = app.focus_cell.top_right
 
   elif direction == DIRECTIONS.DOWN_LEFT:
-    if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_left
+    if app.focus_cell.bottom_left is not None: app.focus_cell = app.focus_cell.bottom_left
 
   elif direction == DIRECTIONS.DOWN_RIGHT:
-    if app.current_cell.lower_right is not None: app.current_cell = app.current_cell.lower_right
+    if app.focus_cell.bottom_right is not None: app.focus_cell = app.focus_cell.bottom_right
 
 #endregion - Commands ---------------------------------------------------------
 
@@ -1126,8 +1679,8 @@ def handle_keys(event):
 
     if   key == pygame.K_SPACE: toggle_orientation()    
 
-    elif key == pygame.K_LEFT:  current_cell_move(DIRECTIONS.DOWN_LEFT)
-    elif key == pygame.K_RIGHT: current_cell_move(DIRECTIONS.DOWN_RIGHT)
+    elif key == pygame.K_LEFT:  move_focus(DIRECTIONS.DOWN_LEFT)
+    elif key == pygame.K_RIGHT: move_focus(DIRECTIONS.DOWN_RIGHT)
 
   elif event.mod & pygame.KMOD_ALT:
 
@@ -1143,18 +1696,18 @@ def handle_keys(event):
     elif key == pygame.K_a:    move(DIRECTIONS.DOWN_LEFT)
     elif key == pygame.K_d:    move(DIRECTIONS.DOWN_RIGHT)
 
-    elif key == pygame.K_UP:    current_cell_move(DIRECTIONS.UP)
-    elif key == pygame.K_DOWN:  current_cell_move(DIRECTIONS.DOWN)
-    elif key == pygame.K_LEFT:  current_cell_move(DIRECTIONS.UP_LEFT)
-    elif key == pygame.K_RIGHT: current_cell_move(DIRECTIONS.UP_RIGHT)
+    elif key == pygame.K_UP:    move_focus(DIRECTIONS.UP)
+    elif key == pygame.K_DOWN:  move_focus(DIRECTIONS.DOWN)
+    elif key == pygame.K_LEFT:  move_focus(DIRECTIONS.UP_LEFT)
+    elif key == pygame.K_RIGHT: move_focus(DIRECTIONS.UP_RIGHT)
 
     elif key == pygame.K_r:     reset_grid()
 
-    check_cells()
+    # check_cells()
 
-  if app.current_cell.active == False:
+  if app.focus_cell.active == False:
 
-    set_current_cell()
+    set_focus()
 
 def handle_click(event):
 
@@ -1165,8 +1718,8 @@ def handle_click(event):
         cell.click()
 
   if   event.button == LEFT:        left_click()
-  elif event.button == SCROLL_UP:   move(DIRECTIONS.UP);    check_cells()
-  elif event.button == SCROLL_DOWN: move(DIRECTIONS.DOWN);  check_cells()
+  elif event.button == SCROLL_UP:   move(DIRECTIONS.UP)
+  elif event.button == SCROLL_DOWN: move(DIRECTIONS.DOWN)
   elif event.button == CENTRE:      p('Wheel')
   elif event.button == RIGHT:       reset_grid()
 
@@ -1184,7 +1737,7 @@ def handle_move():
 #region - Main Loop ===========================================================
 
 reset_grid()
-app.current_cell = app.grid[0][0]
+app.focus_cell = app.grid[0][0]
 
 # p(24/2)
 # p(24//2)
