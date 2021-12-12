@@ -221,6 +221,9 @@ class App:
     self.mouseX = 0               # current mouse x positon
     self.mouseY = 0               # current mouse y positon
 
+    self.dragging = False
+    self.mouse_start = None
+
 class Point:
 
   def __init__(self, x, y) -> None:
@@ -252,6 +255,8 @@ class Hex:
   perimeter = 0
   side_length = 0
   tri_area = 0
+
+  offset = 0
 
   def __init__(self, x, y, diameter, color) -> None:
 
@@ -386,7 +391,9 @@ class Hex:
       WIN.blit(WINNER_FONT.render('5', 1, WHITE), (pts[5][X], pts[5][Y]))
 
     pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)
-    pygame.gfxdraw.filled_circle(WIN, self._x, self._y, int(grid.cell_size*0.25), self.center_color)
+    pygame.gfxdraw.filled_circle(WIN, self._x, int(self._y + Hex.offset), int(grid.cell_size*0.25), self.center_color)
+
+    Hex.offset -= 0.0
 
     if self.active == False:
 
@@ -566,7 +573,7 @@ class Hex:
 
       if self.active:
         
-        self.focus_cell = self
+        grid.focus_cell = self
 
         p(self.id)
       # if self.center_color == self.color:
@@ -1154,6 +1161,7 @@ def draw_window():
       WIN.blit(WINNER_FONT.render(str(grid.focus_cell.row), 1, WHITE), (20, 20))
       WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
       WIN.blit(WINNER_FONT.render('Current Cell: ' + str(grid.focus_cell.id), 1, WHITE), (800, 20))
+      WIN.blit(WINNER_FONT.render('Dragging: ' + str(app.dragging), 1, WHITE), (800, 50))
 
     pygame.display.update()
 
@@ -1183,17 +1191,24 @@ def handle_keys(event):
 
   else:
 
-    if   key == pygame.K_w:    grid.move(DIRECTIONS.UP)
-    elif key == pygame.K_s:    grid.move(DIRECTIONS.DOWN)
-    elif key == pygame.K_q:    grid.move(DIRECTIONS.UP_LEFT)
-    elif key == pygame.K_e:    grid.move(DIRECTIONS.UP_RIGHT)
-    elif key == pygame.K_a:    grid.move(DIRECTIONS.DOWN_LEFT)
-    elif key == pygame.K_d:    grid.move(DIRECTIONS.DOWN_RIGHT)
+    if   key == pygame.K_w:     grid.move(DIRECTIONS.UP)
+    elif key == pygame.K_s:     grid.move(DIRECTIONS.DOWN)
+    elif key == pygame.K_q:     grid.move(DIRECTIONS.UP_LEFT)
+    elif key == pygame.K_e:     grid.move(DIRECTIONS.UP_RIGHT)
+    elif key == pygame.K_a:     grid.move(DIRECTIONS.DOWN_LEFT)
+    elif key == pygame.K_d:     grid.move(DIRECTIONS.DOWN_RIGHT)
 
     elif key == pygame.K_UP:    grid.move_focus(DIRECTIONS.UP)
     elif key == pygame.K_DOWN:  grid.move_focus(DIRECTIONS.DOWN)
     elif key == pygame.K_LEFT:  grid.move_focus(DIRECTIONS.UP_LEFT)
     elif key == pygame.K_RIGHT: grid.move_focus(DIRECTIONS.UP_RIGHT)
+
+    elif key == pygame.K_u:     grid.move_focus(DIRECTIONS.UP_LEFT)
+    elif key == pygame.K_i:     grid.move_focus(DIRECTIONS.UP)
+    elif key == pygame.K_o:     grid.move_focus(DIRECTIONS.UP_RIGHT)
+    elif key == pygame.K_j:     grid.move_focus(DIRECTIONS.DOWN_LEFT)
+    elif key == pygame.K_k:     grid.move_focus(DIRECTIONS.DOWN)
+    elif key == pygame.K_l:     grid.move_focus(DIRECTIONS.DOWN_RIGHT)
 
     elif key == pygame.K_r:     grid.reset()
 
@@ -1203,7 +1218,7 @@ def handle_keys(event):
 
     grid.set_focus()
 
-def handle_click(event):
+def handle_up(event):
 
   if   event.button == LEFT:        grid.mouse_click()
   elif event.button == SCROLL_UP:   grid.move(DIRECTIONS.UP)
@@ -1211,12 +1226,41 @@ def handle_click(event):
   elif event.button == CENTRE:      p('Wheel')
   elif event.button == RIGHT:       grid.reset()
 
+  app.dragging = False
+
 def handle_move():
 
   app.mouseX = pygame.mouse.get_pos()[X]
   app.mouseY = pygame.mouse.get_pos()[Y]
   
   grid.mouse_move()
+
+def handle_down(event):
+
+  grid.mouse_click()
+
+  app.dragging = True  
+  app.mouse_start = (app.mouseX, app.mouseY)
+
+def handle_motion(event):
+
+  if(app.dragging):
+
+    theta = math.atan2(app.mouse_start[0] - app.mouseX, app.mouse_start[1] - app.mouseY) * 180 / math.pi
+
+    if(theta != 0):
+
+      if( (theta >=  150 and theta <=  180) or \
+          (theta <= -150 and theta >= -180) ):    grid.move(DIRECTIONS.DOWN)
+      elif(theta <=   30 and theta >=  -30):      grid.move(DIRECTIONS.UP)
+      elif(theta >    30 and theta <=   90):      grid.move(DIRECTIONS.UP_LEFT)
+      elif(theta >    90 and theta <=  150):      grid.move(DIRECTIONS.DOWN_LEFT)
+      elif(theta <   -30 and theta >=  -90):      grid.move(DIRECTIONS.UP_RIGHT)
+      elif(theta <   -90 and theta >= -150):      grid.move(DIRECTIONS.DOWN_RIGHT)
+
+      app.dragging = False
+
+    # p(theta)
 
 #endregion - Events -----------------------------------------------------------
 
@@ -1229,21 +1273,20 @@ def main():
 
   clock = pygame.time.Clock()
 
-  run = True
-
-  while run:
+  while True:
 
     clock.tick(app.fps)
 
     for event in pygame.event.get():
       
       if event.type == pygame.QUIT:
-        run = False
         pygame.quit()
         return
 
-      if event.type == pygame.KEYUP:         handle_keys(event)
-      if event.type == pygame.MOUSEBUTTONUP: handle_click(event)
+      if event.type == pygame.MOUSEMOTION:      handle_motion(event)
+      if event.type == pygame.MOUSEBUTTONDOWN:  handle_down(event)
+      if event.type == pygame.KEYDOWN:          handle_keys(event)
+      if event.type == pygame.MOUSEBUTTONUP:    handle_up(event)
       
       handle_move()
 
