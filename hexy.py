@@ -1,10 +1,34 @@
 """
-  Ideas
+  IDEAS
 
-    Game Call Phaze - overlapping patterns (rotate, etc)
+    Game Called Phaze - overlapping patterns (rotate, etc)
+
+  TO DO:
+
+    - check linked list connections
+    - current cell selected after each move
+    - hexagonal grid shape
+    - center grid in window (properly)
+    - background hexagons
+    - animation for disappearing cells
+    - error coding
+    - select and inplement music    
+    - scoring display
+
+        i.    New Game
+        ii.   Score
+        iii.  Best
+        iv.   Sound/ music toggle
+        v.    Link to youtube demonstration
+        vi.   Increment/Decrement Grid Size
+        vii.  
+
+  BUGS:
+
+    - Connections are fucky
+
 
 """
-
 #region - hexy \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 #region - Initialization ======================================================
@@ -38,7 +62,15 @@ pygame.RESIZABLE
 import ctypes  # An included library with Python install
 
 def Mbox(title, text, style):
-  
+  ##  Styles:
+  ##  0 : OK
+  ##  1 : OK | Cancel
+  ##  2 : Abort | Retry | Ignore
+  ##  3 : Yes | No | Cancel
+  ##  4 : Yes | No
+  ##  5 : Retry | Cancel 
+  ##  6 : Cancel | Try Again | Continue
+
   return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
 #endregion - Initialization ------------------------------------------------------
@@ -55,7 +87,7 @@ WIN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 
 pygame.display.set_caption("Habitat for Humanity Game")
 
-# Color Constants
+# Color
 WHITE  = (255,255,255,255)
 BLACK  = (  0,  0,  0,255)
 RED    = (255,  0,  0,255)
@@ -65,14 +97,14 @@ YELLOW = (255,255,  0,255)
 
 BACKGROUND = (8,8,8)
 
-# Mouse Button Constants
+# Mouse Button
 LEFT         = 1
 CENTRE       = 2
 RIGHT        = 3
 SCROLL_UP    = 4
 SCROLL_DOWN  = 5
 
-# Coordinate Constants
+# Coordinate
 X            = 0
 Y            = 1
 
@@ -145,7 +177,9 @@ BULLET_HIT_SOUND  = pygame.mixer.Sound(os.path.join('C:/Users/ssbbc/Desktop/Brad
 BULLET_FIRE_SOUND = pygame.mixer.Sound(os.path.join('C:/Users/ssbbc/Desktop/Brad/python/assets', 'Silencer.mp3'))
 
 HEALTH_FONT = pygame.font.SysFont('comicsans', 24)
-WINNER_FONT = pygame.font.SysFont('comicsans', 32)
+# WINNER_FONT = pygame.font.SysFont('arial', 32)
+
+WINNER_FONT = pygame.font.Font(pygame.font.get_default_font(), 18)
 
 #endregion - Constants --------------------------------------------------------
 
@@ -153,7 +187,36 @@ WINNER_FONT = pygame.font.SysFont('comicsans', 32)
 
 def p(s): print(str(s))
 
-def get_Color():
+def get_background_color():
+
+  clr = int(random.random()*16)
+
+  ret = VASARELY_COLORS.PINK.value
+
+  alpha = int(random.random()*64)
+
+  if   clr == COLORS.PINK:        ret = (181, 42,142, alpha)
+  elif clr == COLORS.PURPLE:      ret = ( 90, 24,120, alpha)
+  elif clr == COLORS.CYAN:        ret = ( 39,105,176, alpha)
+  elif clr == COLORS.NAVY:        ret = ( 79,168,219, alpha)
+  elif clr == COLORS.BLUE:        ret = ( 42, 40,143, alpha)
+  elif clr == COLORS.DORANGE:     ret = (227,102, 79, alpha)
+  elif clr == COLORS.LORANGE:     ret = (250,147, 95, alpha)
+  elif clr == COLORS.LYELLOW:     ret = (244,255,173, alpha)
+  elif clr == COLORS.DYELLOW:     ret = (247,194,119, alpha)
+  elif clr == COLORS.LGREEN:      ret = (  0,173,147, alpha)
+  elif clr == COLORS.DGREEN:      ret = (  0,110,110, alpha)
+  elif clr == COLORS.RED:         ret = (222, 33, 49, alpha)
+  elif clr == COLORS.MAROON:      ret = (135, 26, 35, alpha)
+  elif clr == COLORS.PEACH:       ret = (247,194, 11, alpha)
+  elif clr == COLORS.BLACK:       ret = ( 32, 32, 32, alpha)
+  elif clr == COLORS.GRAY:        ret = (122,135,191, alpha)
+  elif clr == COLORS.TRANSPARENT: ret = (255,  0,  0, alpha)
+  else:                           ret = ( 64, 64, 64, alpha)
+
+  return ret
+  
+def get_color():
 
   clr = int(random.random()*16)
 
@@ -206,6 +269,25 @@ def get_Color():
 
     # return ret
 
+def semi_perimeter(a,b,c):  # a, b, and c are lengths of the triangles sides
+
+  return (a+b+c)/2
+
+def triangle_area(a,b,c):
+
+  # Heron's Formula
+  # https://en.wikipedia.org/wiki/Heron%27s_formula
+
+  s = semi_perimeter(a,b,c)
+
+  temp = s*(s-a)*(s-b)*(s-c)
+
+  retval = 0
+
+  if temp > 0: retval = math.floor(math.sqrt(temp))
+  
+  return retval
+
 #endregion - Misc ----------------------------------------------------------
 
 #region - Objects =============================================================
@@ -224,28 +306,14 @@ class App:
     self.dragging = False
     self.mouse_start = None
 
+    self.background = []
+
 class Point:
 
   def __init__(self, x, y) -> None:
     
     self.x = x
     self.y = y
-
-def semi_perimeter(a,b,c):  # a, b, and c are lengths of the triangles sides
-
-  return (a+b+c)/2
-
-def triangle_area(a,b,c):
-
-  s = semi_perimeter(a,b,c)
-
-  temp = s*(s-a)*(s-b)*(s-c)
-
-  retval = 0
-
-  if temp > 0: retval = math.floor(math.sqrt(temp))
-  
-  return retval
 
 class Hex:
 
@@ -258,7 +326,7 @@ class Hex:
 
   offset = 0
 
-  def __init__(self, x, y, diameter, color) -> None:
+  def __init__(self, x, y, diameter, color, background=False) -> None:
 
     self.id = Hex.id                                # identification Number
 
@@ -270,6 +338,8 @@ class Hex:
 
     self.row = 0                                    # row of cell in grid array
     self.col = 0                                    # col of cell in grid array
+
+    self.background  = background                   # is the hex a background element
 
     self.diameter = diameter                        # full diameter width of hexagon
     self.radius = diameter/2                        # distance from center to corner point
@@ -287,15 +357,18 @@ class Hex:
     self.hit = False                                # Mouse is currently over the cell
     self.active = True                              # Cell has not been solved
 
+    self.delta_x = 10                               # horizontal speed
+    self.delta_y = 10                               # vertical speed
+
     # References to adjacent cells - Cells wrap
     self.top = None                                 # cell above
     self.bottom = None                              # cell below
 
-    self.top_right = None                         # cell above right
-    self.top_left = None                          # cell above left
+    self.top_right = None                           # cell above right
+    self.top_left = None                            # cell above left
 
-    self.bottom_right = None                         # cell below right
-    self.bottom_left = None                          # cell below left
+    self.bottom_right = None                        # cell below right
+    self.bottom_left = None                         # cell below left
 
     self.left = None                                # cell left
     self.right = None                               # cell right
@@ -391,7 +464,9 @@ class Hex:
       WIN.blit(WINNER_FONT.render('5', 1, WHITE), (pts[5][X], pts[5][Y]))
 
     pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)
-    pygame.gfxdraw.filled_circle(WIN, self._x, int(self._y + Hex.offset), int(grid.cell_size*0.25), self.center_color)
+
+    if(self.background == False):
+      pygame.gfxdraw.filled_circle(WIN, self._x, int(self._y + Hex.offset), int(grid.cell_size*0.25), self.center_color)
 
     Hex.offset -= 0.0
 
@@ -567,7 +642,7 @@ class Hex:
 
     self.hitTest()
 
-  def mouse_click(self) -> None:
+  def mouse_up(self) -> None:
 
     if self.hit:
 
@@ -575,11 +650,88 @@ class Hex:
         
         grid.focus_cell = self
 
-        p(self.id)
-      # if self.center_color == self.color:
 
-      #   self.color        = VASARELY_COLORS.TRANSPARENT.value
-      #   self.center_color = VASARELY_COLORS.TRANSPARENT.value
+
+class Background_Hex:
+
+  id = 0
+  orientation = ORIENTATIONS.VERTICAL
+  count = 0
+
+  def __init__(self, x, y, diameter, color) -> None:
+
+    self.id = Hex.id                                # identification Number
+
+    Hex.id+=1                                       # Increment overall object count
+
+    self._x = int(x)                                # horizontal position of centre
+    self._y = int(y)                                # vertical position of centre
+    # self._z = int(z)                                # vertical position of centre
+
+    self.diameter = diameter                        # full diameter width of hexagon
+    self.radius = diameter/2                        # distance from center to corner point
+    self.inradius = self.radius*math.cos(math.pi/6) # distance from center to center of a side
+    self.maximal_diameter = self.radius * 2         # twice the radius         
+    self.minimal_diameter = self.inradius * 2       # twice the inradius
+
+    self.center = Point(x, y)                       # Center Point
+    self.points = []                                # list of 6 vertex points
+
+    self.color = color                              # Background Color
+
+    speed = 2
+
+    self.delta_x = random.uniform(-speed, speed)    # horizontal speed
+    self.delta_y = random.uniform(-speed, speed)    # vertical speed
+
+    # Aliases
+    sX = self._x
+    sY = self._y
+    r = self.radius
+    pts = self.points
+    # brd = self.border
+
+    # Offsets
+    oX = math.cos(math.pi/3)*self.radius # Offset x
+    oY = math.sin(math.pi/3)*self.radius # Offset Y
+
+    pts.append([sX + r,  sY     ])
+    pts.append([sX + oX, sY - oY])
+    pts.append([sX - oX, sY - oY])
+    pts.append([sX - r,  sY     ])
+    pts.append([sX - oX, sY + oY])
+    pts.append([sX + oX, sY + oY])
+
+  def draw(self):
+
+    s_dx = self.delta_x
+    s_dy = self.delta_y
+
+    pts = self.points
+    # self.points[0] = [self.points[0][X] + self.delta_x,  self.points[0][Y] + self.delta_y]
+    
+    pts[0][X] += s_dx;    pts[0][Y] += s_dy
+    pts[1][X] += s_dx;    pts[1][Y] += s_dy
+    pts[2][X] += s_dx;    pts[2][Y] += s_dy
+    pts[3][X] += s_dx;    pts[3][Y] += s_dy
+    pts[4][X] += s_dx;    pts[4][Y] += s_dy
+    pts[5][X] += s_dx;    pts[5][Y] += s_dy
+
+    for pt in pts:
+
+      if pt[X] > WIDTH or \
+         pt[X] < 0:
+
+        self.delta_x *= -1
+        # break
+      
+      if pt[Y] > HEIGHT or \
+         pt[Y] < 0:
+
+        self.delta_y *= -1
+        break
+
+    pygame.gfxdraw.filled_polygon(WIN, self.points, self.color)
 
 class Grid:
 
@@ -633,7 +785,7 @@ class Grid:
           if col%2 == 0: rowPos = inRadius * 0.75 + row * inRadius + inRadius/2
           else:          rowPos = inRadius * 0.75 + row * inRadius
 
-          h = Hex(colPos, rowPos, radius, get_Color())
+          h = Hex(colPos, rowPos, radius, get_color())
 
           h.col = col
           h.row = row
@@ -661,7 +813,7 @@ class Grid:
           if col%2 == 0: y = inRadius * 0.75 + row * inRadius + inRadius/2
           else:          y = inRadius * 0.75 + row * inRadius
 
-          h = Hex(x, y, radius, get_Color())
+          h = Hex(x, y, radius, get_color())
 
           h.col = col
           h.row = row
@@ -901,15 +1053,29 @@ class Grid:
 
   def reset(self):
     
+    def load_background():
+      
+      app.background.clear()
+
+      for row in range(50):
+
+        h = Background_Hex(random.random()*WIDTH, random.random()*HEIGHT, random.random()*250, get_background_color())
+
+        app.background.append(h)
+
+      p(len(app.background))
+      
     Hex.id =  0
     Hex.area = 0
 
     self.moves = 0
     self.cells.clear()
-
+    
     self.load()     # Load the grid... duh
     self.connect()  # Load cell adjacentcy (above/below etc)
     self.shuffle()  # Scramble the inner circles
+
+    load_background()
 
     self.set_focus()
     
@@ -1128,11 +1294,11 @@ class Grid:
       for cell in row:
         cell.mouse_move()  
 
-  def mouse_click(self):
+  def mouse_up(self):
   
     for row in self.cells:
       for cell in row:        
-        cell.mouse_click()
+        cell.mouse_up()
 
 #endregion - Objects ----------------------------------------------------------
 
@@ -1151,7 +1317,9 @@ def draw_window():
 
     WIN.fill(BACKGROUND)
 
-    grid.draw()
+    draw_background()
+
+    # grid.draw()
 
     w = WIDTH/(grid.size+1)
 
@@ -1168,6 +1336,11 @@ def draw_window():
   # except:
 
   #   Mbox('Exception - Hexy.py', 'draw_window() - ' + Exception.__name__, 1)
+
+def draw_background():
+
+  for cell in app.background:
+    cell.draw()
 
 #endregion - Commands ---------------------------------------------------------
 
@@ -1214,13 +1387,13 @@ def handle_keys(event):
 
     # check_cells()
 
-  if grid.focus_cell.active == False:
+  # if grid.focus_cell.active == False:
 
-    grid.set_focus()
+    # grid.set_focus()
 
 def handle_up(event):
 
-  if   event.button == LEFT:        grid.mouse_click()
+  if   event.button == LEFT:        grid.mouse_up()
   elif event.button == SCROLL_UP:   grid.move(DIRECTIONS.UP)
   elif event.button == SCROLL_DOWN: grid.move(DIRECTIONS.DOWN)
   elif event.button == CENTRE:      p('Wheel')
@@ -1237,7 +1410,7 @@ def handle_move():
 
 def handle_down(event):
 
-  grid.mouse_click()
+  # grid.set_focus()
 
   app.dragging = True  
   app.mouse_start = (app.mouseX, app.mouseY)
@@ -1269,6 +1442,8 @@ def handle_motion(event):
 # p(24/2)
 # p(24//2)
 
+# Mbox('Title', "Now is the time for all good men to come to the aid of the party.", 6)
+
 def main():
 
   clock = pygame.time.Clock()
@@ -1283,10 +1458,11 @@ def main():
         pygame.quit()
         return
 
-      if event.type == pygame.MOUSEMOTION:      handle_motion(event)
-      if event.type == pygame.MOUSEBUTTONDOWN:  handle_down(event)
-      if event.type == pygame.KEYDOWN:          handle_keys(event)
       if event.type == pygame.MOUSEBUTTONUP:    handle_up(event)
+      if event.type == pygame.MOUSEBUTTONDOWN:  handle_down(event)
+      if event.type == pygame.MOUSEMOTION:      handle_motion(event)
+      
+      if event.type == pygame.KEYDOWN:          handle_keys(event)
       
       handle_move()
 
