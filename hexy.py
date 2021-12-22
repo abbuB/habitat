@@ -83,6 +83,8 @@ DEBUG = True
 WIDTH  = 1000
 HEIGHT = 1000
 
+
+
 WIN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 
 pygame.display.set_caption("Habitat for Humanity Game")
@@ -306,7 +308,26 @@ class App:
     self.dragging = False
     self.mouse_start = None
 
+    self.background_length = 200
+
     self.background = []
+
+  def reset(self):
+
+    self.load_background()
+    self.moves = 0
+
+  def load_background(self):
+      
+    self.background.clear()
+
+    for row in range(self.background_length):
+
+      h = B_Hex(random.random()*WIDTH, random.random()*HEIGHT, random.random()*250, get_background_color())
+
+      self.background.append(h)
+
+    # p(len(self.background))
 
 class Point:
 
@@ -326,6 +347,12 @@ class Hex:
 
   offset = 0
 
+  diameter = 0
+  radius = 0
+  inradius = 0
+  maximal_diameter = 0
+  minimal_diameter = 0
+
   def __init__(self, x, y, diameter, color, background=False) -> None:
 
     self.id = Hex.id                                # identification Number
@@ -341,11 +368,11 @@ class Hex:
 
     self.background  = background                   # is the hex a background element
 
-    self.diameter = diameter                        # full diameter width of hexagon
-    self.radius = diameter/2                        # distance from center to corner point
-    self.inradius = self.radius*math.cos(math.pi/6) # distance from center to center of a side
-    self.maximal_diameter = self.radius * 2         # twice the radius         
-    self.minimal_diameter = self.inradius * 2       # twice the inradius
+    Hex.diameter = diameter                         # full diameter width of hexagon
+    Hex.radius = diameter/2                         # distance from center to corner point
+    Hex.inradius = Hex.radius*math.cos(math.pi/6)   # distance from center to center of a side
+    Hex.maximal_diameter = Hex.radius * 2           # twice the radius
+    Hex.minimal_diameter = Hex.inradius * 2         # twice the inradius
 
     self.center = Point(x, y)                       # Center Point
     self.points = []                                # list of 6 vertex points
@@ -376,7 +403,7 @@ class Hex:
     # Aliases
     sX = self._x
     sY = self._y
-    r = self.radius
+    r = Hex.radius
     pts = self.points
     brd = self.border
 
@@ -384,8 +411,8 @@ class Hex:
     if self.orientation == ORIENTATIONS.HORIZONTAL:
 
       # Offsets
-      oX = self.inradius # Offset x
-      oY = math.sin(math.pi/6)*self.radius # Offset Y
+      oX = Hex.inradius # Offset x
+      oY = math.sin(math.pi/6)*Hex.radius # Offset Y
 
       pts.append((sX,      sY + r ))
       pts.append((sX + oX, sY + oY))
@@ -408,8 +435,8 @@ class Hex:
     else: # Vertical
       
       # Offsets
-      oX = math.cos(math.pi/3)*self.radius # Offset x
-      oY = math.sin(math.pi/3)*self.radius # Offset Y
+      oX = math.cos(math.pi/3)*Hex.radius # Offset x
+      oY = math.sin(math.pi/3)*Hex.radius # Offset Y
 
       pts.append((sX + r,  sY))
       pts.append((sX + oX, sY - oY ))
@@ -483,7 +510,7 @@ class Hex:
 
       if self.active:
         
-        pygame.draw.polygon(WIN, WHITE, self.border, width=1)
+        pygame.draw.polygon(WIN, WHITE, self.border, width=2)
 
       # pygame.gfxdraw.aapolygon(w, self.points, VASARELY_COLORS.RED.value)
 
@@ -549,8 +576,8 @@ class Hex:
 
       area = triangle_area(a,b,c)
 
-      if area>0: retval = area
-      else:      retval = math.inf
+      if area > 0: retval = area
+      else:        retval = math.inf
 
       return retval
 
@@ -624,7 +651,7 @@ class Hex:
     x = app.mouseX
     y = app.mouseY
 
-    if math.dist((self._x, self._y), (x, y))<=self.radius:
+    if math.dist((self._x, self._y), (x, y))<=Hex.radius:
       
       if rectangle() or right_triangle() or left_triangle():
 
@@ -650,13 +677,17 @@ class Hex:
         
         grid.focus_cell = self
 
-
-
-class Background_Hex:
+class B_Hex:
 
   id = 0
   orientation = ORIENTATIONS.VERTICAL
   count = 0
+
+  diameter = 0
+  radius = 0
+  inradius = 0
+  maximal_diameter = 0
+  minimal_diameter = 0
 
   def __init__(self, x, y, diameter, color) -> None:
 
@@ -668,11 +699,11 @@ class Background_Hex:
     self._y = int(y)                                # vertical position of centre
     # self._z = int(z)                                # vertical position of centre
 
-    self.diameter = diameter                        # full diameter width of hexagon
-    self.radius = diameter/2                        # distance from center to corner point
-    self.inradius = self.radius*math.cos(math.pi/6) # distance from center to center of a side
-    self.maximal_diameter = self.radius * 2         # twice the radius         
-    self.minimal_diameter = self.inradius * 2       # twice the inradius
+    B_Hex.diameter = diameter                        # full diameter width of hexagon
+    B_Hex.radius = diameter/2                        # distance from center to corner point
+    B_Hex.inradius = self.radius*math.cos(math.pi/6) # distance from center to center of a side
+    B_Hex.maximal_diameter = self.radius * 2         # twice the radius         
+    B_Hex.minimal_diameter = self.inradius * 2       # twice the inradius
 
     self.center = Point(x, y)                       # Center Point
     self.points = []                                # list of 6 vertex points
@@ -753,7 +784,8 @@ class Grid:
 
     self.focus_cell = None                          # which hexagonal cell has the focus
 
-    self.size = grid_size                           # of hexagonal layers
+    self.size = grid_size                           # of rows/columns
+
     self.cell_size = cell_size
 
   def draw(self):
@@ -766,7 +798,7 @@ class Grid:
 
   def load(self):
     
-    def load_grid_horizontal():
+    def horizontal():
 
       p('Horizontal')
 
@@ -794,24 +826,25 @@ class Grid:
 
         app.grid.append(temp)
 
-    def load_grid_vertical():
-    
-      p('VERTICAL')
+    def vertical():
 
-      radius = self.cell_size*1/math.cos(math.pi/6)
+      cos30 = math.cos(math.pi/6)
       limit = self.size
-      inRadius = radius*math.cos(math.pi/6)
+      radius = self.cell_size/cos30
+      inRadius = radius*cos30
+      
+      margin = radius/2 + 1.125 * radius
 
       for row in range(limit):
-        
+
         temp = []
 
         for col in range(limit):
-        
-          x = 2.5 * radius/2 + (0.75 * radius) * col
 
-          if col%2 == 0: y = inRadius * 0.75 + row * inRadius + inRadius/2
-          else:          y = inRadius * 0.75 + row * inRadius
+          x = margin + 0.75 * radius * col
+          y = (inRadius * 0.75) + row * inRadius
+
+          if col%2 == 0: y += inRadius/2
 
           h = Hex(x, y, radius, get_color())
 
@@ -824,8 +857,10 @@ class Grid:
 
         self.cells.append(temp)
 
-    if   self.orientation == ORIENTATIONS.HORIZONTAL: load_grid_horizontal()
-    elif self.orientation == ORIENTATIONS.VERTICAL:   load_grid_vertical()
+      p('VERTICAL')
+
+    if   self.orientation == ORIENTATIONS.HORIZONTAL: horizontal()
+    elif self.orientation == ORIENTATIONS.VERTICAL:   vertical()
 
   def shuffle(self):
     
@@ -1053,29 +1088,16 @@ class Grid:
 
   def reset(self):
     
-    def load_background():
-      
-      app.background.clear()
-
-      for row in range(50):
-
-        h = Background_Hex(random.random()*WIDTH, random.random()*HEIGHT, random.random()*250, get_background_color())
-
-        app.background.append(h)
-
-      p(len(app.background))
-      
     Hex.id =  0
     Hex.area = 0
 
-    self.moves = 0
     self.cells.clear()
     
     self.load()     # Load the grid... duh
     self.connect()  # Load cell adjacentcy (above/below etc)
     self.shuffle()  # Scramble the inner circles
 
-    load_background()
+    app.reset()
 
     self.set_focus()
     
@@ -1304,12 +1326,20 @@ class Grid:
 
 app = App()
 
-m = 7
+sz = 7
 
-grid = Grid(0, 0, HEIGHT/(m+1), m, ORIENTATIONS.VERTICAL)
+grid = Grid(0, 0, HEIGHT/(sz+1), sz, ORIENTATIONS.VERTICAL)
 grid.reset()
 
 #region - Commands ============================================================
+
+def draw_gui():
+
+  if grid.focus_cell is not None:
+    WIN.blit(WINNER_FONT.render(str(grid.focus_cell.row), 1, WHITE), (20, 20))
+    WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
+    WIN.blit(WINNER_FONT.render('Current Cell: ' + str(grid.focus_cell.id), 1, WHITE), (800, 20))
+    WIN.blit(WINNER_FONT.render('Dragging: ' + str(app.dragging), 1, WHITE), (800, 50))
 
 def draw_window():
 
@@ -1319,17 +1349,13 @@ def draw_window():
 
     draw_background()
 
-    # grid.draw()
+    grid.draw()
 
     w = WIDTH/(grid.size+1)
 
     # pygame.draw.rect(WIN, (128,0,0), (w/2, w/2, WIDTH-w, HEIGHT-w), 1, 15)
 
-    if grid.focus_cell is not None:
-      WIN.blit(WINNER_FONT.render(str(grid.focus_cell.row), 1, WHITE), (20, 20))
-      WIN.blit(WINNER_FONT.render('Moves: ' + str(app.moves), 1, WHITE), (20, 50))
-      WIN.blit(WINNER_FONT.render('Current Cell: ' + str(grid.focus_cell.id), 1, WHITE), (800, 20))
-      WIN.blit(WINNER_FONT.render('Dragging: ' + str(app.dragging), 1, WHITE), (800, 50))
+    draw_gui()  
 
     pygame.display.update()
 
